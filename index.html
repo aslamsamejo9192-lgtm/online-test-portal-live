@@ -572,33 +572,72 @@
       </div>
     </div>
 
-    <script>
+    <script type="module">
       "use strict";
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+      import { getFirestore, collection, getDocs, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
 
-      /* ============ DATA (preview seed — live version reads tests from the database) ============ */
-      var TESTS = [
-        {
-          id: "bio-cell-1",
-          title: "Biology — Cell Structure & Function",
-          chapter: "Chapter 2 · Cell Biology",
-          subject: "Biology",
-          minutes: 10,
-          from: "30 Oct 2026, 9:00 AM",
-          to: "30 Oct 2026, 11:59 PM",
-          questions: [
-            { q: "Which organelle is known as the powerhouse of the cell?", options: ["Ribosome", "Mitochondria", "Golgi apparatus", "Nucleus"], answer: 1 },
-            { q: "Protein synthesis in the cell takes place in the:", options: ["Lysosome", "Vacuole", "Ribosome", "Centriole"], answer: 2 },
-            { q: "Which organelle contains digestive enzymes and is called the suicidal bag of the cell?", options: ["Lysosome", "Mitochondria", "Endoplasmic reticulum", "Plastid"], answer: 0 },
-            { q: "The plasma membrane is mainly composed of a bilayer of:", options: ["Cellulose", "Phospholipids", "Chitin", "Starch"], answer: 1 },
-            { q: "In prokaryotic cells, the genetic material is located in the:", options: ["Nucleus", "Nucleolus", "Nucleoid", "Chloroplast"], answer: 2 },
-            { q: "Which structure controls the entry and exit of substances in a cell?", options: ["Cell wall", "Cytoplasm", "Cell membrane", "Ribosome"], answer: 2 },
-            { q: "Chlorophyll pigment is present in the:", options: ["Mitochondria", "Chloroplast", "Leucoplast", "Amyloplast"], answer: 1 },
-            { q: "Which organelle modifies, sorts and packages proteins for transport?", options: ["Golgi apparatus", "Lysosome", "Peroxisome", "Glyoxysome"], answer: 0 },
-            { q: "The fluid mosaic model of the plasma membrane was proposed by:", options: ["Schleiden and Schwann", "Watson and Crick", "Singer and Nicolson", "Robert Brown"], answer: 2 },
-            { q: "Which of the following is present in plant cells but absent in animal cells?", options: ["Mitochondria", "Cell wall", "Ribosome", "Golgi apparatus"], answer: 1 }
-          ]
-        }
-      ];
+      /* ============ FIREBASE (JS SDK v11, named database) ============ */
+      var FIREBASE_CONFIG = {"apiKey":"AIzaSyDcl40Rd9qltVxIrU-XTitXSckmAKLnO0M","authDomain":"graphic-mode-k5p7n.firebaseapp.com","projectId":"graphic-mode-k5p7n","storageBucket":"graphic-mode-k5p7n.firebasestorage.app","messagingSenderId":"657836619427","appId":"1:657836619427:web:c091f3679f4289b50b7116"};
+      var FIRESTORE_DB_ID = "ai-studio-examflow-90c5e0d3-b852-4230-9b5f-275b0a37264b";
+      var fbApp = null, fbDb = null;
+      try {
+        fbApp = initializeApp(FIREBASE_CONFIG);
+        fbDb = getFirestore(fbApp, FIRESTORE_DB_ID);
+      } catch (e) { console.error("Firebase init failed", e); }
+
+      /* ============ TESTS (read at runtime from Firestore portalTests) ============ */
+      var TESTS = [];
+      var testsLoaded = false;
+      function normQuestion(qq){
+        return {
+          q: qq.q || qq.text || "",
+          options: qq.options || [],
+          answer: (typeof qq.answer === "number") ? qq.answer : qq.correctAnswer,
+          points: qq.points || 1
+        };
+      }
+      function fmtWhen(v){
+        if (!v) return "—";
+        if (typeof v === "string") return v;
+        try {
+          if (typeof v.toDate === "function") {
+            var d = v.toDate();
+            return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) + ", " + d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+          }
+          if (typeof v.seconds === "number") {
+            var d2 = new Date(v.seconds * 1000);
+            return d2.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) + ", " + d2.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+          }
+        } catch (e) {}
+        return "—";
+      }
+      function normTest(id, data){
+        data = data || {};
+        return {
+          id: id,
+          title: data.title || "Test",
+          chapter: data.chapter || "",
+          subject: data.subject || "",
+          minutes: data.minutes || data.durationMinutes || 10,
+          from: fmtWhen(data.from),
+          to: fmtWhen(data.to),
+          questions: (data.questions || []).map(normQuestion)
+        };
+      }
+      async function loadTestsFromFirebase(){
+        TESTS = [];
+        testsLoaded = false;
+        if (!fbDb) return;
+        try {
+          var snap = await getDocs(collection(fbDb, "portalTests"));
+          snap.forEach(function(ds){
+            var t = normTest(ds.id, ds.data());
+            if (t.questions.length) TESTS.push(t);
+          });
+        } catch (e) { console.error("portalTests read failed", e); }
+        testsLoaded = true;
+      }
 
       /* ============ STATE ============ */
       var state = {
@@ -644,6 +683,55 @@
         if (!attemptedByUser[key]) attemptedByUser[key] = [];
         if (attemptedByUser[key].indexOf(testId) === -1) attemptedByUser[key].push(testId);
         persistAttemptStore();
+      }
+      async function sha256Hex(str){
+        try {
+          var buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+          var arr = Array.prototype.slice.call(new Uint8Array(buf));
+          return arr.map(function(b){ return ("0" + b.toString(16)).slice(-2); }).join("");
+        } catch (e) { return null; }
+      }
+      async function attemptDocId(testId){
+        if (!state.user) return null;
+        var h = await sha256Hex(testId + "|" + state.user.key);
+        return h;
+      }
+      async function remoteHasAttempted(testId){
+        if (!fbDb) return false;
+        var id = await attemptDocId(testId);
+        if (!id) return false;
+        try {
+          var snap = await getDoc(doc(fbDb, "portalAttempts", id));
+          return snap.exists();
+        } catch (e) { console.error("portalAttempts check failed", e); return false; }
+      }
+      async function hasAttemptedRemote(testId){
+        if (hasAttempted(testId)) return true;
+        if (await remoteHasAttempted(testId)) { recordAttempt(testId); return true; }
+        return false;
+      }
+      async function writeAttemptRemote(result){
+        if (!fbDb) return false;
+        var id = await attemptDocId(result.testId);
+        if (!id) return false;
+        try {
+          await setDoc(doc(fbDb, "portalAttempts", id), {
+            studentName: state.user ? state.user.name : "",
+            fatherName: state.user ? state.user.fatherName : "",
+            testId: result.testId,
+            testTitle: result.title,
+            answers: result.review.map(function(r){ return r.chosen; }),
+            score: result.score,
+            total: result.total,
+            percentage: result.percent,
+            submittedAt: serverTimestamp()
+          });
+          return true;
+        } catch (e) {
+          if (e && e.code === "permission-denied") return "exists";
+          console.error("portalAttempts write failed", e);
+          return false;
+        }
       }
       function showCannotAttemptAgain(){
         var notice = document.getElementById("attempt-notice");
@@ -708,8 +796,9 @@
         $("student-name").textContent = state.user.name;
         $("student-father-line").textContent = "Father Name: " + state.user.fatherName;
         $("student-avatar").textContent = state.user.name.charAt(0).toUpperCase();
-        renderTestList();
         show("view-app");
+        $("tests-area").innerHTML = '<div class="empty-state"><h3>Loading tests…</h3></div>';
+        loadTestsFromFirebase().then(function(){ renderTestList(); });
       }
 
       $("btn-logout").addEventListener("click", function(){
@@ -748,7 +837,7 @@
           var st = testStatus(t);
           var attempted = st === "Attempted";
           html += "<tr>" +
-            '<td class="cell-test" data-label="Test"><div class="t-name">' + esc(t.title) + '</div><div class="t-sub">' + esc(t.chapter) + " · " + t.questions.length + " Questions · " + t.minutes + " min</div></td>" +
+            '<td class="cell-test" data-label="Test"><div class="t-name">' + esc(t.title) + '</div><div class="t-sub">' + (t.chapter ? esc(t.chapter) + " · " : "") + t.questions.length + " Questions · " + t.minutes + " min</div></td>" +
             '<td data-label="From"><span class="t-when">' + esc(t.from) + "</span></td>" +
             '<td data-label="To"><span class="t-when">' + esc(t.to) + "</span></td>" +
             '<td data-label="Status"><span class="status-pill ' + (st === "Available" ? "status-avail" : "status-done") + '">' + st + "</span></td>" +
@@ -758,10 +847,10 @@
         html += "</tbody>";
         table.innerHTML = html;
         table.querySelectorAll(".btn-start").forEach(function(btn){
-          btn.addEventListener("click", function(){
+          btn.addEventListener("click", async function(){
             var t = TESTS.filter(function(x){ return x.id === btn.getAttribute("data-test-id"); })[0];
             if (!t) return;
-            if (hasAttempted(t.id)) { showCannotAttemptAgain(); return; }
+            if (await hasAttemptedRemote(t.id)) { renderTestList(); showCannotAttemptAgain(); return; }
             var notice = $("attempt-notice");
             if (notice) notice.classList.add("hidden");
             openTestInfo(t);
@@ -788,10 +877,10 @@
         renderTestList();
         show("view-app");
       });
-      $("btn-info-start").addEventListener("click", function(){
+      $("btn-info-start").addEventListener("click", async function(){
         if (!state.pendingTest) return;
         var t = state.pendingTest;
-        if (hasAttempted(t.id)) {
+        if (await hasAttemptedRemote(t.id)) {
           state.pendingTest = null;
           renderTestList();
           show("view-app");
@@ -809,8 +898,8 @@
       });
 
       /* ============ EXAM ============ */
-      function startExam(test){
-        if (hasAttempted(test.id)) {
+      async function startExam(test){
+        if (await hasAttemptedRemote(test.id)) {
           renderTestList();
           show("view-app");
           showCannotAttemptAgain();
@@ -874,7 +963,7 @@
             '<div class="q-row">' +
               '<div class="q-num">' + (i+1) + '.</div>' +
               '<div class="q-main">' +
-                '<div class="q-line"><p class="q-text">' + esc(q.q) + '</p><span class="q-points">1 point</span></div>' +
+                '<div class="q-line"><p class="q-text">' + esc(q.q) + '</p><span class="q-points">' + (q.points || 1) + ' point' + (((q.points || 1) > 1) ? 's' : '') + '</span></div>' +
                 '<div class="options" role="radiogroup" aria-label="Question ' + (i+1) + '">' + opts + '</div>' +
               '</div>' +
             '</div>';
@@ -912,7 +1001,7 @@
         submitExam(false);
       });
 
-      function submitExam(auto){
+      async function submitExam(auto){
         var ex = state.exam;
         if (!ex) return;
         if (ex.timerId) clearInterval(ex.timerId);
@@ -944,6 +1033,14 @@
           review: review,
           autoSubmitted: !!auto
         };
+        var write = await writeAttemptRemote(result);
+        if (write === "exists") {
+          state.exam = null;
+          renderTestList();
+          show("view-app");
+          showCannotAttemptAgain();
+          return;
+        }
         state.results.push(result);
         recordAttempt(result.testId);
         state.exam = null;

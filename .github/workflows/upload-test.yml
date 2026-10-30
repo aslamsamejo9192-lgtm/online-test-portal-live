@@ -1,0 +1,81 @@
+name: Upload test to portalTests
+
+# Future test-upload path for the Online Test Portal (manual only — never runs
+# automatically). A maintainer commits a test JSON file to this repo, then runs
+# this workflow by hand. It writes ONE document into the portalTests collection
+# using a Firebase service-account key stored as a GitHub Secret. The secret
+# value is never printed or committed; only its name is referenced here.
+#
+# Test JSON format:
+# {
+#   "title": "Biology — Cell Structure & Function",
+#   "chapter": "Chapter 2 · Cell Biology",
+#   "subject": "Biology",
+#   "minutes": 10,
+#   "from": "30 Oct 2026, 9:00 AM",
+#   "to": "30 Oct 2026, 11:59 PM",
+#   "questions": [
+#     { "q": "Question text?", "options": ["A", "B", "C", "D"], "answer": 1, "points": 1 }
+#   ]
+# }
+# `answer` is the 0-based index of the correct option.
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_json_path:
+        description: "Path in this repo to the test JSON file"
+        required: true
+        default: "tests/test.json"
+      test_doc_id:
+        description: "Firestore document ID (optional; defaults to the file name without extension)"
+        required: false
+        default: ""
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Firestore client
+        run: pip install google-cloud-firestore
+
+      - name: Write test document to Firestore
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          FIREBASE_PROJECT_ID: graphic-mode-k5p7n
+          FIREBASE_DATABASE_ID: ai-studio-examflow-90c5e0d3-b852-4230-9b5f-275b0a37264b
+          TEST_JSON_PATH: ${{ inputs.test_json_path }}
+          TEST_DOC_ID: ${{ inputs.test_doc_id }}
+        run: |
+          python3 - <<'PYEOF'
+          import json, os, sys
+          from pathlib import Path
+
+          from google.oauth2 import service_account
+          from google.cloud import firestore
+
+          key_json = os.environ["FIREBASE_SERVICE_ACCOUNT"]
+          project = os.environ["FIREBASE_PROJECT_ID"]
+          database = os.environ["FIREBASE_DATABASE_ID"]
+          path = Path(os.environ["TEST_JSON_PATH"])
+          doc_id = os.environ.get("TEST_DOC_ID") or path.stem
+
+          data = json.loads(path.read_text(encoding="utf-8"))
+          assert isinstance(data, dict), "test JSON must be an object"
+          assert data.get("title"), "test JSON needs a title"
+          assert isinstance(data.get("questions"), list) and data["questions"], \
+              "test JSON needs a non-empty questions array"
+          for q in data["questions"]:
+              assert q.get("options") and isinstance(q["options"], list), \
+                  "each question needs an options array"
+              assert isinstance(q.get("answer"), int), \
+                  "each question needs an integer answer index"
+
+          info = json.loads(key_json)
+          creds = service_account.Credentials.from_service_account_info(info)
+          client = firestore.Client(credentials=creds, project=project, database=database)
+          client.collection("portalTests").document(doc_id).set(data)
+          print(f"wrote portalTests/{doc_id} ({len(data['questions'])} questions)")
+          PYEOF
