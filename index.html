@@ -1,0 +1,999 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:," />
+    <title>Online Test Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" />
+    <style>
+      :root{
+        --bg:#eef3f1;
+        --surface:#ffffff;
+        --surface-2:#f4f8f6;
+        --ink:#10201a;
+        --ink-2:#44564f;
+        --ink-3:#71837b;
+        --line:#d9e4df;
+        --accent:#0b7a5c;
+        --accent-strong:#065c44;
+        --accent-soft:#e2f2ec;
+        --amber:#b97a0c;
+        --amber-soft:#fdf1dc;
+        --red:#b3352c;
+        --red-bright:#c0362c;
+        --red-soft:#fdecea;
+        --green:#1c7c43;
+        --green-soft:#e6f4ec;
+        --navy:#0d2b3e;
+        --shadow:0 18px 45px rgba(13,43,62,.12);
+        --shadow-sm:0 4px 14px rgba(13,43,62,.08);
+      }
+      @media (prefers-color-scheme: dark){
+        :root{
+          --bg:#0a120f;
+          --surface:#121e19;
+          --surface-2:#182620;
+          --ink:#e8f1ed;
+          --ink-2:#a9bcb3;
+          --ink-3:#7e938a;
+          --line:#24382f;
+          --accent:#2fbf97;
+          --accent-strong:#5fd3ae;
+          --accent-soft:#143128;
+          --amber:#e0a33c;
+          --amber-soft:#2c2110;
+          --red:#c0453c;
+          --red-bright:#e0685f;
+          --red-soft:#33191a;
+          --green:#4cc07e;
+          --green-soft:#12301f;
+          --navy:#0d2b3e;
+          --shadow:0 18px 45px rgba(0,0,0,.45);
+          --shadow-sm:0 4px 14px rgba(0,0,0,.35);
+        }
+      }
+      *{box-sizing:border-box}
+      html,body{margin:0;padding:0}
+      body{
+        font-family:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+        background:var(--bg);
+        color:var(--ink);
+        font-size:16.5px;
+        line-height:1.55;
+        -webkit-font-smoothing:antialiased;
+      }
+      button{font-family:inherit;cursor:pointer}
+      input{font-family:inherit}
+      .hidden{display:none !important}
+      .mono{font-family:"IBM Plex Mono",ui-monospace,monospace}
+      .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+      /* ---------- LOGIN ---------- */
+      .login-wrap{
+        min-height:100svh;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        padding:24px 16px;
+      }
+      .login-card{
+        width:100%;max-width:400px;
+        background:var(--surface);
+        border:1px solid var(--line);
+        border-radius:18px;
+        box-shadow:var(--shadow);
+        padding:30px 26px 26px;
+        text-align:center;
+      }
+      .field{margin-bottom:18px}
+      .field label{display:block;font-weight:700;font-size:14px;margin-bottom:7px}
+      .field .input-wrap{position:relative}
+      .field input{
+        width:100%;
+        padding:14px;
+        text-align:center;
+        font-size:16px;
+        border:1.5px solid var(--line);
+        border-radius:12px;
+        background:var(--surface);
+        color:var(--ink);
+        outline:none;
+        transition:border-color .15s, box-shadow .15s;
+      }
+      .field input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+      .login-error{
+        display:none;
+        background:var(--red-soft);color:var(--red-bright);
+        border-radius:10px;padding:11px 14px;font-size:14.5px;font-weight:600;
+        margin-bottom:16px;
+      }
+      .login-error.show{display:block}
+      .btn-primary{
+        width:100%;min-height:50px;
+        background:var(--accent);color:#fff;
+        border:none;border-radius:12px;
+        padding:14px;font-size:16.5px;font-weight:700;
+        transition:background .15s, transform .1s;
+      }
+      .btn-primary:hover{background:var(--accent-strong)}
+      .btn-primary:active{transform:scale(.99)}
+      .login-title{font-size:29px;font-weight:800;margin:0 0 6px}
+      .login-sub{color:var(--ink-2);font-size:15.5px;margin:0 0 24px}
+      /* ---------- APP SHELL / TEST LIST ---------- */
+      .app{max-width:1120px;margin:0 auto;padding:0 16px 56px}
+      .topbar{
+        display:flex;align-items:center;justify-content:space-between;gap:12px;
+        padding:16px 2px 14px;
+      }
+      .student-chip{display:flex;align-items:center;gap:12px;min-width:0;flex:1}
+      .student-chip > div{min-width:0}
+      .avatar{
+        width:46px;height:46px;border-radius:50%;flex:none;
+        background:var(--navy);color:#fff;
+        display:grid;place-items:center;font-weight:800;font-size:17px;
+      }
+      .student-chip b{display:block;font-size:16.5px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      .student-chip small{color:var(--ink-3);font-size:13.5px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      .student-chip small#student-father-line{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:break-word}
+      .btn-ghost{
+        border:1.5px solid var(--line);background:var(--surface);color:var(--ink);
+        border-radius:10px;padding:9px 16px;font-weight:700;font-size:14.5px;min-height:44px;
+        display:inline-flex;align-items:center;gap:8px;flex:none;
+      }
+      .btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+      .btn-ghost svg{width:16px;height:16px}
+      .list-head h2{font-size:24px;font-weight:800;margin:6px 0 14px}
+
+      .table-wrap{
+        background:var(--surface);border:1px solid var(--line);border-radius:16px;
+        box-shadow:var(--shadow-sm);overflow:hidden;
+      }
+      table.test-table{width:100%;border-collapse:collapse}
+      .test-table th{
+        text-align:left;font-size:12.5px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;
+        color:var(--ink-3);background:var(--surface-2);
+        padding:13px 18px;border-bottom:1.5px solid var(--line);
+      }
+      .test-table td{
+        padding:16px 18px;border-bottom:1px solid var(--line);
+        font-size:15.5px;vertical-align:middle;
+      }
+      .test-table tbody tr:last-child td{border-bottom:none}
+      .test-table .t-name{font-weight:800;font-size:16.5px;line-height:1.3}
+      .test-table .t-sub{color:var(--ink-3);font-size:13.5px;font-weight:600;margin-top:2px}
+      .test-table .t-when{white-space:nowrap;font-weight:600;color:var(--ink-2)}
+      .status-pill{
+        display:inline-block;padding:5px 12px;border-radius:999px;
+        font-size:12.5px;font-weight:800;white-space:nowrap;
+      }
+      .status-avail{background:var(--green-soft);color:var(--green)}
+      .status-done{background:var(--amber-soft);color:var(--amber)}
+      .btn-start{
+        background:var(--accent);color:#fff;border:none;border-radius:10px;
+        padding:11px 20px;font-size:14.5px;font-weight:700;min-height:44px;white-space:nowrap;
+      }
+      .btn-start:hover{background:var(--accent-strong)}
+      .btn-start:disabled,.btn-locked{
+        background:var(--surface-2);color:var(--ink-3);border:1.5px solid var(--line);
+        cursor:not-allowed;
+      }
+      .btn-start:disabled:hover,.btn-locked:hover{background:var(--surface-2);color:var(--ink-3)}
+      .btn-attempted{
+        background:var(--surface-2) !important;color:var(--ink-3) !important;border:1.5px solid var(--line) !important;
+        cursor:pointer;
+      }
+      .btn-attempted:hover{background:var(--amber-soft) !important;color:var(--amber) !important;border-color:var(--amber) !important}
+      .lock-notice{
+        background:var(--amber-soft);color:var(--amber);
+        border:1.5px solid var(--amber);border-radius:12px;
+        padding:14px 18px;font-weight:800;font-size:16.5px;text-align:center;
+        margin:0 0 14px;
+      }
+
+      .empty-state{
+        background:var(--surface);border:1.5px dashed var(--line);border-radius:18px;
+        padding:64px 24px;text-align:center;
+      }
+      .empty-state .ring{
+        width:76px;height:76px;border-radius:50%;margin:0 auto 18px;
+        background:var(--surface-2);display:grid;place-items:center;
+      }
+      .empty-state .ring svg{width:34px;height:34px;stroke:var(--ink-3)}
+      .empty-state h3{font-size:24px;font-weight:800;margin:0}
+
+      /* ---------- TEST INFORMATION ---------- */
+      .info-wrap{max-width:640px;margin:0 auto;padding:28px 16px 56px}
+      .info-card{
+        background:var(--surface);border:1px solid var(--line);border-radius:18px;
+        box-shadow:var(--shadow);padding:28px 26px;
+      }
+      .info-card h2{font-size:23px;font-weight:800;margin:0 0 20px;line-height:1.3}
+      .info-rows{border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:24px}
+      .info-row{
+        display:flex;align-items:center;justify-content:space-between;gap:16px;
+        padding:15px 18px;background:var(--surface);
+      }
+      .info-row + .info-row{border-top:1px solid var(--line)}
+      .info-row .k{color:var(--ink-3);font-weight:700;font-size:14px;display:inline-flex;align-items:center;gap:8px}
+      .info-row .k svg{width:16px;height:16px;flex:none}
+      .info-row .v{font-weight:800;font-size:15.5px;text-align:right}
+      .info-actions{display:flex;gap:10px}
+      .info-actions .btn-cancel-lg{
+        flex:1;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);
+        border-radius:12px;padding:14px;font-weight:700;font-size:15.5px;min-height:50px;
+      }
+      .info-actions .btn-start-lg{
+        flex:1.4;background:var(--accent);color:#fff;border:none;
+        border-radius:12px;padding:14px;font-weight:700;font-size:15.5px;min-height:50px;
+      }
+      .info-actions .btn-start-lg:hover{background:var(--accent-strong)}
+
+      /* ---------- EXAM (all questions, one scrolling page) ---------- */
+      .exam{max-width:880px;margin:0 auto;padding:0 16px 56px}
+      .exam-top{
+        position:sticky;top:0;z-index:20;
+        background:var(--bg);
+        padding:14px 0 12px;
+        display:flex;align-items:center;justify-content:space-between;gap:12px;
+        border-bottom:2px solid var(--line);
+      }
+      .exam-top h2{font-size:18px;margin:0;line-height:1.3}
+      .exam-top small{color:var(--ink-3);font-weight:600}
+      .timer-pill{
+        display:inline-flex;align-items:center;gap:8px;flex:none;
+        background:var(--navy);color:#fff;border-radius:999px;
+        padding:9px 16px;font-weight:700;font-size:16.5px;
+      }
+      .timer-pill svg{width:18px;height:18px}
+      .timer-pill.low{background:var(--red-bright)}
+      .candidate-bar{
+        display:flex;align-items:center;gap:13px;
+        background:var(--surface);border:1px solid var(--line);border-radius:14px;
+        box-shadow:var(--shadow-sm);
+        padding:12px 16px;margin:16px 0 0;
+      }
+      .candidate-bar .avatar{width:48px;height:48px}
+      .candidate-bar .avatar svg{width:26px;height:26px}
+      .candidate-bar b{display:block;font-size:16px;line-height:1.25}
+      .candidate-bar small{color:var(--ink-3);font-size:13.5px;font-weight:600;display:block}
+      .candidate-bar .cand-id{margin-left:auto;text-align:right;flex:none}
+      .candidate-bar .cand-id small{font-size:12px;text-transform:uppercase;letter-spacing:.5px}
+      .candidate-bar .cand-id b{font-size:15px}
+      .progress-track{height:8px;background:var(--line);border-radius:99px;margin:16px 0 20px;overflow:hidden}
+      .progress-fill{height:100%;background:var(--accent);border-radius:99px;transition:width .3s}
+      .q-list{display:grid;gap:18px}
+      .q-card{
+        background:var(--surface);border:1px solid var(--line);border-radius:8px;
+        padding:24px 24px 20px;box-shadow:var(--shadow-sm);min-width:0;
+      }
+      .q-row{display:flex;gap:16px;min-width:0}
+      .q-num{font-size:19px;font-weight:800;line-height:1.45;flex:none;min-width:30px}
+      .q-main{flex:1;min-width:0}
+      .q-line{display:flex;align-items:flex-start;gap:14px}
+      .q-text{font-size:18.5px;font-weight:600;line-height:1.45;margin:0 0 18px;flex:1;min-width:0}
+      .q-points{flex:none;color:var(--ink-3);font-size:13.5px;font-weight:600;padding-top:4px;white-space:nowrap}
+      .options{display:grid;gap:4px}
+      .option{
+        display:flex;align-items:center;gap:12px;text-align:left;width:100%;min-height:48px;
+        border:none;background:transparent;color:var(--ink);
+        border-radius:10px;padding:10px 12px;font-size:16.5px;font-weight:500;
+        transition:background .12s;
+      }
+      .option:hover{background:var(--surface-2)}
+      .option .radio{
+        width:22px;height:22px;border-radius:50%;flex:none;
+        border:2px solid var(--ink-3);background:var(--surface);
+      }
+      .option .letter{font-weight:800;font-size:15px;color:var(--ink-2);flex:none}
+      .option .opt-text{flex:1;min-width:0}
+      .option.selected{background:var(--accent-soft)}
+      .option.selected .radio{
+        border-color:var(--accent);
+        background:radial-gradient(circle,var(--accent) 0 6px,transparent 7px);
+      }
+      .option.selected .letter{color:var(--accent-strong)}
+      .submit-area{text-align:center;padding:30px 0 6px}
+      .btn-submit-final{
+        background:var(--accent);color:#fff;border:none;border-radius:10px;
+        padding:14px 52px;font-size:17px;font-weight:700;min-height:52px;min-width:220px;
+        box-shadow:var(--shadow-sm);
+      }
+      .btn-submit-final:hover{background:var(--accent-strong)}
+
+      /* ---------- RESULT ---------- */
+      .result-wrap{max-width:860px;margin:0 auto;padding:30px 16px 56px}
+      .score-card{
+        background:var(--surface);border:1px solid var(--line);border-radius:20px;
+        box-shadow:var(--shadow);padding:34px 26px;text-align:center;margin-bottom:22px;
+      }
+      .score-big{font-size:54px;font-weight:800;line-height:1;margin:6px 0 2px}
+      .score-of{color:var(--ink-2);font-size:17px;font-weight:600}
+      .verdict{
+        display:inline-block;margin-top:14px;padding:7px 18px;border-radius:999px;
+        font-weight:800;font-size:14.5px;
+      }
+      .score-stats{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:24px}
+      .stat{
+        background:var(--surface);border:1px solid var(--line);border-radius:12px;
+        padding:10px 16px;min-width:96px;text-align:center;
+      }
+      .stat b{display:block;font-size:21px;line-height:1.2}
+      .stat small{color:var(--ink-3);font-size:12.5px;font-weight:600}
+      .review-list{display:grid;gap:14px}
+      .review-card{
+        background:var(--surface);border:1px solid var(--line);border-radius:16px;
+        padding:22px;box-shadow:var(--shadow-sm);
+      }
+      .review-card .rq{font-weight:700;font-size:17px;margin:0 0 14px;line-height:1.45}
+      .review-card .rq .qno{color:var(--ink-3);font-weight:800;margin-right:8px}
+      .r-opt{
+        display:flex;align-items:center;gap:11px;
+        border:1.5px solid var(--line);border-radius:11px;
+        padding:11px 14px;margin-bottom:8px;font-size:15.5px;font-weight:600;color:var(--ink-2);
+      }
+      .r-opt .letter{
+        width:28px;height:28px;border-radius:8px;flex:none;background:var(--surface-2);
+        border:1.5px solid var(--line);display:grid;place-items:center;font-size:13px;font-weight:800;
+      }
+      .r-opt.correct{border-color:var(--green);background:var(--green-soft);color:var(--ink)}
+      .r-opt.correct .letter{background:var(--green);border-color:var(--green);color:#fff}
+      .r-opt.wrong{border-color:var(--red-bright);background:var(--red-soft);color:var(--ink)}
+      .r-opt.wrong .letter{background:var(--red-bright);border-color:var(--red-bright);color:#fff}
+      .r-tag{margin-left:auto;font-size:12.5px;font-weight:800;flex:none}
+      .r-tag.ok{color:var(--green)} .r-tag.bad{color:var(--red-bright)}
+      .skip-note{font-size:14px;color:var(--ink-3);font-weight:600;margin-top:4px}
+
+      /* modal */
+      .modal-back{
+        position:fixed;inset:0;background:rgba(6,20,15,.55);z-index:50;
+        display:grid;place-items:center;padding:18px;
+      }
+      .modal{
+        background:var(--surface);border-radius:18px;max-width:430px;width:100%;
+        padding:28px;box-shadow:var(--shadow);
+      }
+      .modal h3{margin:0 0 8px;font-size:21px}
+      .modal p{color:var(--ink-2);margin:0 0 14px;font-size:15.5px}
+      .modal .warn-count{
+        background:var(--amber-soft);color:var(--amber);border-radius:12px;
+        padding:13px 16px;font-weight:800;font-size:15.5px;margin-bottom:22px;text-align:center;
+      }
+      .modal .row{display:flex;gap:10px}
+      .modal .row button{flex:1;padding:13px;border-radius:11px;font-weight:700;font-size:15px;min-height:48px}
+      .btn-cancel{border:1.5px solid var(--line);background:var(--surface);color:var(--ink)}
+      .btn-confirm{border:none;background:var(--red);color:#fff}
+
+      /* ---------- MOBILE ---------- */
+      @media (max-width:900px){
+        .q-card{padding:20px 16px 14px}
+        .q-row{gap:10px}
+        .q-num{min-width:24px;font-size:17.5px}
+        .q-text{font-size:17px}
+        .btn-submit-final{width:100%;min-width:0}
+      }
+      @media (max-width:640px){
+        /* test table reflows into stacked rows — no sideways scroll */
+        .table-wrap{background:none;border:none;box-shadow:none;overflow:visible}
+        table.test-table, .test-table tbody, .test-table tr, .test-table td{display:block;width:100%}
+        .test-table thead{display:none}
+        .test-table tr{
+          background:var(--surface);border:1px solid var(--line);border-radius:16px;
+          box-shadow:var(--shadow-sm);padding:16px;margin-bottom:12px;
+        }
+        .test-table td{
+          border:none;padding:5px 0;
+          display:flex;align-items:center;justify-content:space-between;gap:14px;
+          text-align:right;font-size:15px;
+        }
+        .test-table td::before{
+          content:attr(data-label);
+          font-size:12px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;
+          color:var(--ink-3);text-align:left;flex:none;
+        }
+        .test-table td.cell-test{display:block;text-align:left}
+        .test-table td.cell-test::before{display:block;margin-bottom:5px}
+        .test-table .t-when{white-space:normal}
+        .test-table td.cell-action{display:block;padding-top:12px}
+        .test-table td.cell-action::before{display:none}
+        .btn-start{width:100%}
+        .info-actions{flex-direction:column-reverse}
+        .info-card{padding:24px 20px}
+        .candidate-bar .cand-id b{font-size:14px}
+        .score-big{font-size:44px}
+        .review-card{padding:18px}
+        .modal .row{flex-direction:column-reverse}
+      }
+    </style>
+  </head>
+  <body>
+
+    <!-- ================= LOGIN ================= -->
+    <section id="view-login" class="login-wrap">
+      <form class="login-card" id="login-form" novalidate>
+        <h1 class="login-title">Welcome Back</h1>
+        <p class="login-sub">Login to your exam</p>
+        <div class="login-error" id="login-error" role="alert"></div>
+        <div class="field">
+          <label for="login-name">Name</label>
+          <div class="input-wrap">
+            <input type="text" id="login-name" placeholder="Enter your name" autocomplete="name" />
+          </div>
+        </div>
+        <div class="field">
+          <label for="login-father">Father Name</label>
+          <div class="input-wrap">
+            <input type="text" id="login-father" placeholder="Enter your father name" autocomplete="off" />
+          </div>
+        </div>
+        <button type="submit" class="btn-primary">Start</button>
+      </form>
+    </section>
+
+    <!-- ================= TEST LIST ================= -->
+    <section id="view-app" class="hidden">
+      <div class="app">
+        <div class="topbar">
+          <div class="student-chip">
+            <div class="avatar" id="student-avatar">S</div>
+            <div>
+              <b id="student-name">Student</b>
+              <small id="student-father-line">Father Name: —</small>
+            </div>
+          </div>
+          <button class="btn-ghost" id="btn-logout">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>
+            Logout
+          </button>
+        </div>
+
+        <div class="list-head"><h2>Test List</h2></div>
+        <div id="attempt-notice" class="lock-notice hidden" role="alert">You cannot Attempt Again</div>
+        <div id="tests-area"></div>
+      </div>
+    </section>
+
+    <!-- ================= TEST INFORMATION ================= -->
+    <section id="view-info" class="hidden">
+      <div class="info-wrap">
+        <div class="info-card">
+          <h2 id="info-title">Test</h2>
+          <div class="info-rows">
+            <div class="info-row">
+              <span class="k"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg>Start Time</span>
+              <span class="v" id="info-from">—</span>
+            </div>
+            <div class="info-row">
+              <span class="k"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg>End Time</span>
+              <span class="v" id="info-to">—</span>
+            </div>
+            <div class="info-row">
+              <span class="k"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>Test Time</span>
+              <span class="v" id="info-duration">—</span>
+            </div>
+            <div class="info-row">
+              <span class="k"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>Total Questions</span>
+              <span class="v" id="info-questions">—</span>
+            </div>
+          </div>
+          <div class="info-actions">
+            <button class="btn-cancel-lg" id="btn-info-cancel">Cancel</button>
+            <button class="btn-start-lg" id="btn-info-start">Start Exam</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= EXAM ================= -->
+    <section id="view-exam" class="hidden">
+      <div class="exam">
+        <div class="exam-top">
+          <div>
+            <h2 id="exam-title">Test</h2>
+            <small id="exam-progress-label">0 of 10 answered</small>
+          </div>
+          <div class="timer-pill" id="timer-pill">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            <span class="mono" id="timer-text">10:00</span>
+          </div>
+        </div>
+
+        <div class="candidate-bar">
+          <div class="avatar" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+          <div>
+            <b id="cand-name">Student</b>
+            <small>Candidate</small>
+          </div>
+          <div class="cand-id">
+            <small>Father Name</small>
+            <b id="cand-father">—</b>
+          </div>
+        </div>
+
+        <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+
+        <div class="q-list" id="q-list"></div>
+
+        <div class="submit-area">
+          <button class="btn-submit-final" id="btn-submit">Submit</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= RESULT ================= -->
+    <section id="view-result" class="hidden">
+      <div class="result-wrap">
+        <div class="score-card">
+          <div class="score-of" id="result-test-name">Test</div>
+          <div class="score-big" id="result-score">0 / 10</div>
+          <div class="score-of" id="result-percent">0%</div>
+          <div><span class="verdict" id="result-verdict">—</span></div>
+          <div class="score-stats">
+            <div class="stat"><b id="rs-correct">0</b><small>Correct</small></div>
+            <div class="stat"><b id="rs-wrong">0</b><small>Wrong</small></div>
+            <div class="stat"><b id="rs-skipped">0</b><small>Skipped</small></div>
+            <div class="stat"><b id="rs-time">—</b><small>Time used</small></div>
+          </div>
+          <div style="margin-top:26px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+            <button class="btn-ghost" id="btn-back-tests">Back to Tests</button>
+          </div>
+        </div>
+        <h3 style="font-size:20px;margin:0 0 14px">Answer Review</h3>
+        <div class="review-list" id="review-list"></div>
+      </div>
+    </section>
+
+    <!-- Cannot attempt again -->
+    <div class="modal-back hidden" id="locked-modal">
+      <div class="modal" role="alertdialog" aria-labelledby="locked-modal-title" aria-modal="true">
+        <h3 id="locked-modal-title">You cannot Attempt Again</h3>
+        <p>This test has already been attempted. Each test can be attempted only once.</p>
+        <div class="row">
+          <button class="btn-confirm" id="locked-modal-ok" style="background:var(--accent)">OK</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- End Exam confirm -->
+    <div class="modal-back hidden" id="submit-modal">
+      <div class="modal">
+        <h3>Submit Test?</h3>
+        <p>Your test will be submitted and the result will be shown. You cannot change your answers after this.</p>
+        <div class="warn-count" id="submit-modal-text">0 questions are still unanswered.</div>
+        <div class="row">
+          <button class="btn-cancel" id="modal-cancel">Continue Exam</button>
+          <button class="btn-confirm" id="modal-confirm">Submit</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      "use strict";
+
+      /* ============ DATA (preview seed — live version reads tests from the database) ============ */
+      var TESTS = [
+        {
+          id: "bio-cell-1",
+          title: "Biology — Cell Structure & Function",
+          chapter: "Chapter 2 · Cell Biology",
+          subject: "Biology",
+          minutes: 10,
+          from: "30 Oct 2026, 9:00 AM",
+          to: "30 Oct 2026, 11:59 PM",
+          questions: [
+            { q: "Which organelle is known as the powerhouse of the cell?", options: ["Ribosome", "Mitochondria", "Golgi apparatus", "Nucleus"], answer: 1 },
+            { q: "Protein synthesis in the cell takes place in the:", options: ["Lysosome", "Vacuole", "Ribosome", "Centriole"], answer: 2 },
+            { q: "Which organelle contains digestive enzymes and is called the suicidal bag of the cell?", options: ["Lysosome", "Mitochondria", "Endoplasmic reticulum", "Plastid"], answer: 0 },
+            { q: "The plasma membrane is mainly composed of a bilayer of:", options: ["Cellulose", "Phospholipids", "Chitin", "Starch"], answer: 1 },
+            { q: "In prokaryotic cells, the genetic material is located in the:", options: ["Nucleus", "Nucleolus", "Nucleoid", "Chloroplast"], answer: 2 },
+            { q: "Which structure controls the entry and exit of substances in a cell?", options: ["Cell wall", "Cytoplasm", "Cell membrane", "Ribosome"], answer: 2 },
+            { q: "Chlorophyll pigment is present in the:", options: ["Mitochondria", "Chloroplast", "Leucoplast", "Amyloplast"], answer: 1 },
+            { q: "Which organelle modifies, sorts and packages proteins for transport?", options: ["Golgi apparatus", "Lysosome", "Peroxisome", "Glyoxysome"], answer: 0 },
+            { q: "The fluid mosaic model of the plasma membrane was proposed by:", options: ["Schleiden and Schwann", "Watson and Crick", "Singer and Nicolson", "Robert Brown"], answer: 2 },
+            { q: "Which of the following is present in plant cells but absent in animal cells?", options: ["Mitochondria", "Cell wall", "Ribosome", "Golgi apparatus"], answer: 1 }
+          ]
+        }
+      ];
+
+      /* ============ STATE ============ */
+      var state = {
+        user: null,            // {name, fatherName, key, testsAssigned}
+        pendingTest: null,     // test shown on the Test Information screen
+        results: [],           // {testId, title, subject, score, total, percent, correct, wrong, skipped, timeUsed, date, review:[...]}
+        exam: null             // {test, answers:[], secondsLeft, timerId, totalSeconds}
+      };
+
+      /* ============ ONE-ATTEMPT LOCK (per student, survives logout/login in same browser) ============ */
+      var ATTEMPT_KEY = "otp_attempted_tests_v1";
+      var attemptedByUser = {};
+      (function loadAttemptStore(){
+        try {
+          var raw = localStorage.getItem(ATTEMPT_KEY);
+          if (raw) {
+            var parsed = JSON.parse(raw);
+            if (parsed && typeof parsed === "object") attemptedByUser = parsed;
+          }
+        } catch (e) { /* storage unavailable — in-memory map still locks for this page session */ }
+      })();
+      function persistAttemptStore(){
+        try { localStorage.setItem(ATTEMPT_KEY, JSON.stringify(attemptedByUser)); } catch (e) {}
+      }
+      function reloadAttemptStore(){
+        try {
+          var raw = localStorage.getItem(ATTEMPT_KEY);
+          if (raw) {
+            var parsed = JSON.parse(raw);
+            if (parsed && typeof parsed === "object") attemptedByUser = parsed;
+          }
+        } catch (e) {}
+      }
+      function hasAttempted(testId){
+        if (!state.user) return false;
+        if (state.results.some(function(r){ return r.testId === testId && r.userKey === state.user.key; })) return true;
+        var list = attemptedByUser[state.user.key] || [];
+        return list.indexOf(testId) !== -1;
+      }
+      function recordAttempt(testId){
+        if (!state.user) return;
+        var key = state.user.key;
+        if (!attemptedByUser[key]) attemptedByUser[key] = [];
+        if (attemptedByUser[key].indexOf(testId) === -1) attemptedByUser[key].push(testId);
+        persistAttemptStore();
+      }
+      function showCannotAttemptAgain(){
+        var notice = document.getElementById("attempt-notice");
+        if (notice) {
+          notice.textContent = "You cannot Attempt Again";
+          notice.classList.remove("hidden");
+        }
+        var modal = document.getElementById("locked-modal");
+        if (modal) modal.classList.remove("hidden");
+        /* Stay on the Test List — never open Test Information or the exam. */
+        var app = document.getElementById("view-app");
+        if (app && app.classList.contains("hidden")) {
+          ["view-login","view-info","view-exam","view-result"].forEach(function(v){
+            var el = document.getElementById(v);
+            if (el) el.classList.add("hidden");
+          });
+          app.classList.remove("hidden");
+        }
+      }
+
+      function $(id){ return document.getElementById(id); }
+      function show(viewId){
+        ["view-login","view-app","view-info","view-exam","view-result"].forEach(function(v){
+          $(v).classList.toggle("hidden", v !== viewId);
+        });
+        window.scrollTo(0,0);
+      }
+      function fmtTime(sec){
+        sec = Math.max(0, sec);
+        var m = Math.floor(sec/60), s = sec % 60;
+        return (m<10?"0":"")+m + ":" + (s<10?"0":"")+s;
+      }
+      function esc(s){
+        return String(s).replace(/[&<>"']/g, function(c){
+          return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+        });
+      }
+
+      /* ============ LOGIN (Name + Father Name, Start) ============ */
+      $("login-form").addEventListener("submit", function(e){
+        e.preventDefault();
+        var name = $("login-name").value.trim().replace(/\s+/g, " ");
+        var father = $("login-father").value.trim().replace(/\s+/g, " ");
+        var err = $("login-error");
+        if (!name || !father) {
+          err.textContent = "Please enter your name and father name.";
+          err.classList.add("show");
+          return;
+        }
+        err.classList.remove("show");
+        state.user = {
+          name: name,
+          fatherName: father,
+          key: name.toLowerCase() + "|" + father.toLowerCase(),
+          testsAssigned: true
+        };
+        enterApp();
+      });
+
+      function enterApp(){
+        reloadAttemptStore();
+        $("student-name").textContent = state.user.name;
+        $("student-father-line").textContent = "Father Name: " + state.user.fatherName;
+        $("student-avatar").textContent = state.user.name.charAt(0).toUpperCase();
+        renderTestList();
+        show("view-app");
+      }
+
+      $("btn-logout").addEventListener("click", function(){
+        state.user = null;
+        state.pendingTest = null;
+        var notice = $("attempt-notice");
+        if (notice) notice.classList.add("hidden");
+        var lm = $("locked-modal");
+        if (lm) lm.classList.add("hidden");
+        show("view-login");
+      });
+
+      /* ============ TEST LIST ============ */
+      function testStatus(t){
+        return hasAttempted(t.id) ? "Attempted" : "Available";
+      }
+
+      function renderTestList(){
+        var area = $("tests-area");
+        var tests = (state.user && state.user.testsAssigned) ? TESTS : [];
+        if (!tests.length) {
+          area.innerHTML =
+            '<div class="empty-state">' +
+              '<div class="ring"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="m9 15 2 2 4-4"/></svg></div>' +
+              '<h3>No Available Test</h3>' +
+            '</div>';
+          return;
+        }
+
+        var wrap = document.createElement("div");
+        wrap.className = "table-wrap";
+        var table = document.createElement("table");
+        table.className = "test-table";
+        var html = "<thead><tr><th>Test</th><th>From</th><th>To</th><th>Status</th><th>Action</th></tr></thead><tbody>";
+        tests.forEach(function(t){
+          var st = testStatus(t);
+          var attempted = st === "Attempted";
+          html += "<tr>" +
+            '<td class="cell-test" data-label="Test"><div class="t-name">' + esc(t.title) + '</div><div class="t-sub">' + esc(t.chapter) + " · " + t.questions.length + " Questions · " + t.minutes + " min</div></td>" +
+            '<td data-label="From"><span class="t-when">' + esc(t.from) + "</span></td>" +
+            '<td data-label="To"><span class="t-when">' + esc(t.to) + "</span></td>" +
+            '<td data-label="Status"><span class="status-pill ' + (st === "Available" ? "status-avail" : "status-done") + '">' + st + "</span></td>" +
+            '<td class="cell-action" data-label="Action"><button class="btn-start' + (attempted ? " btn-attempted" : "") + '" data-test-id="' + esc(t.id) + '" data-attempted="' + (attempted ? "true" : "false") + '">Start Exam</button></td>' +
+          "</tr>";
+        });
+        html += "</tbody>";
+        table.innerHTML = html;
+        table.querySelectorAll(".btn-start").forEach(function(btn){
+          btn.addEventListener("click", function(){
+            var t = TESTS.filter(function(x){ return x.id === btn.getAttribute("data-test-id"); })[0];
+            if (!t) return;
+            if (hasAttempted(t.id)) { showCannotAttemptAgain(); return; }
+            var notice = $("attempt-notice");
+            if (notice) notice.classList.add("hidden");
+            openTestInfo(t);
+          });
+        });
+        wrap.appendChild(table);
+        area.innerHTML = "";
+        area.appendChild(wrap);
+      }
+
+      /* ============ TEST INFORMATION ============ */
+      function openTestInfo(test){
+        if (hasAttempted(test.id)) { showCannotAttemptAgain(); return; }
+        state.pendingTest = test;
+        $("info-title").textContent = test.title;
+        $("info-from").textContent = test.from;
+        $("info-to").textContent = test.to;
+        $("info-duration").textContent = test.minutes + " Minutes";
+        $("info-questions").textContent = test.questions.length;
+        show("view-info");
+      }
+      $("btn-info-cancel").addEventListener("click", function(){
+        state.pendingTest = null;
+        renderTestList();
+        show("view-app");
+      });
+      $("btn-info-start").addEventListener("click", function(){
+        if (!state.pendingTest) return;
+        var t = state.pendingTest;
+        if (hasAttempted(t.id)) {
+          state.pendingTest = null;
+          renderTestList();
+          show("view-app");
+          showCannotAttemptAgain();
+          return;
+        }
+        state.pendingTest = null;
+        startExam(t);
+      });
+      $("locked-modal-ok").addEventListener("click", function(){
+        $("locked-modal").classList.add("hidden");
+      });
+      $("locked-modal").addEventListener("click", function(e){
+        if (e.target === this) this.classList.add("hidden");
+      });
+
+      /* ============ EXAM ============ */
+      function startExam(test){
+        if (hasAttempted(test.id)) {
+          renderTestList();
+          show("view-app");
+          showCannotAttemptAgain();
+          return;
+        }
+        state.exam = {
+          test: test,
+          answers: test.questions.map(function(){ return -1; }),
+          secondsLeft: test.minutes * 60,
+          totalSeconds: test.minutes * 60,
+          timerId: null
+        };
+        $("exam-title").textContent = test.title;
+        $("cand-name").textContent = state.user ? state.user.name : "Student";
+        $("cand-father").textContent = state.user ? state.user.fatherName : "—";
+        show("view-exam");
+        renderAllQuestions();
+        updateTimerUI();
+        state.exam.timerId = setInterval(function(){
+          state.exam.secondsLeft--;
+          updateTimerUI();
+          if (state.exam.secondsLeft <= 0) {
+            clearInterval(state.exam.timerId);
+            submitExam(true);
+          }
+        }, 1000);
+      }
+
+      function updateTimerUI(){
+        if (!state.exam) return;
+        $("timer-text").textContent = fmtTime(state.exam.secondsLeft);
+        $("timer-pill").classList.toggle("low", state.exam.secondsLeft <= 60);
+      }
+
+      function updateExamProgress(){
+        var ex = state.exam;
+        if (!ex) return;
+        var total = ex.test.questions.length;
+        var attempted = ex.answers.filter(function(a){ return a !== -1; }).length;
+        $("exam-progress-label").textContent = attempted + " of " + total + " answered";
+        $("progress-fill").style.width = (total ? (attempted/total*100) : 0) + "%";
+      }
+
+      function renderAllQuestions(){
+        var ex = state.exam;
+        var letters = ["A","B","C","D"];
+        var list = $("q-list");
+        list.innerHTML = "";
+        ex.test.questions.forEach(function(q, i){
+          var card = document.createElement("article");
+          card.className = "q-card";
+          var opts = "";
+          q.options.forEach(function(opt, oi){
+            opts += '<button type="button" class="option' + (ex.answers[i] === oi ? " selected" : "") + '" role="radio" aria-checked="' + (ex.answers[i] === oi ? "true" : "false") + '" data-q="' + i + '" data-o="' + oi + '">' +
+              '<span class="radio" aria-hidden="true"></span>' +
+              '<span class="letter">' + letters[oi] + '.</span>' +
+              '<span class="opt-text">' + esc(opt) + '</span>' +
+            '</button>';
+          });
+          card.innerHTML =
+            '<div class="q-row">' +
+              '<div class="q-num">' + (i+1) + '.</div>' +
+              '<div class="q-main">' +
+                '<div class="q-line"><p class="q-text">' + esc(q.q) + '</p><span class="q-points">1 point</span></div>' +
+                '<div class="options" role="radiogroup" aria-label="Question ' + (i+1) + '">' + opts + '</div>' +
+              '</div>' +
+            '</div>';
+          list.appendChild(card);
+        });
+        list.querySelectorAll(".option").forEach(function(btn){
+          btn.addEventListener("click", function(){
+            var qi = parseInt(btn.getAttribute("data-q"), 10);
+            var oi = parseInt(btn.getAttribute("data-o"), 10);
+            ex.answers[qi] = oi;
+            var card = btn.closest(".q-card");
+            card.querySelectorAll(".option").forEach(function(o){
+              var sel = parseInt(o.getAttribute("data-o"), 10) === oi;
+              o.classList.toggle("selected", sel);
+              o.setAttribute("aria-checked", sel ? "true" : "false");
+            });
+            updateExamProgress();
+          });
+        });
+        updateExamProgress();
+      }
+      $("btn-submit").addEventListener("click", function(){
+        if (!state.exam) return;
+        var un = state.exam.answers.filter(function(a){ return a === -1; }).length;
+        $("submit-modal-text").textContent = un > 0
+          ? un + " question" + (un>1?"s are":" is") + " still unanswered — unanswered questions get zero marks."
+          : "All questions are answered. Nothing is left unanswered.";
+        $("submit-modal").classList.remove("hidden");
+      });
+      $("modal-cancel").addEventListener("click", function(){
+        $("submit-modal").classList.add("hidden");
+      });
+      $("modal-confirm").addEventListener("click", function(){
+        $("submit-modal").classList.add("hidden");
+        submitExam(false);
+      });
+
+      function submitExam(auto){
+        var ex = state.exam;
+        if (!ex) return;
+        if (ex.timerId) clearInterval(ex.timerId);
+        var correct = 0, wrong = 0, skipped = 0;
+        var review = ex.test.questions.map(function(q, i){
+          var chosen = ex.answers[i];
+          if (chosen === -1) skipped++;
+          else if (chosen === q.answer) correct++;
+          else wrong++;
+          return { q: q.q, options: q.options, answer: q.answer, chosen: chosen };
+        });
+        var total = ex.test.questions.length;
+        var percent = Math.round(correct / total * 100);
+        var now = new Date();
+        var result = {
+          testId: ex.test.id,
+          userKey: state.user ? state.user.key : "",
+          title: ex.test.title,
+          subject: ex.test.subject,
+          score: correct,
+          total: total,
+          percent: percent,
+          correct: correct,
+          wrong: wrong,
+          skipped: skipped,
+          timeUsed: fmtTime(ex.totalSeconds - ex.secondsLeft),
+          date: now.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) + ", " +
+                now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
+          review: review,
+          autoSubmitted: !!auto
+        };
+        state.results.push(result);
+        recordAttempt(result.testId);
+        state.exam = null;
+        renderResult(result);
+        show("view-result");
+      }
+
+      /* ============ RESULT VIEW ============ */
+      function renderResult(r){
+        $("result-test-name").textContent = r.title + (r.autoSubmitted ? " · Time expired — auto submitted" : "");
+        $("result-score").textContent = r.score + " / " + r.total;
+        $("result-percent").textContent = "Your score: " + r.percent + "%";
+        var verdict = $("result-verdict");
+        if (r.percent >= 50) {
+          verdict.textContent = "PASSED";
+          verdict.style.background = "var(--green-soft)"; verdict.style.color = "var(--green)";
+        } else {
+          verdict.textContent = "NOT PASSED — 50% required";
+          verdict.style.background = "var(--red-soft)"; verdict.style.color = "var(--red-bright)";
+        }
+        $("rs-correct").textContent = r.correct;
+        $("rs-wrong").textContent = r.wrong;
+        $("rs-skipped").textContent = r.skipped;
+        $("rs-time").textContent = r.timeUsed;
+
+        var list = $("review-list");
+        list.innerHTML = "";
+        var letters = ["A","B","C","D"];
+        r.review.forEach(function(item, i){
+          var card = document.createElement("div");
+          card.className = "review-card";
+          var html = '<p class="rq"><span class="qno">Q' + (i+1) + '.</span>' + esc(item.q) + '</p>';
+          item.options.forEach(function(opt, oi){
+            var cls = "";
+            var tag = "";
+            if (oi === item.answer) { cls = "correct"; tag = '<span class="r-tag ok">Correct answer</span>'; }
+            if (oi === item.chosen && item.chosen !== item.answer) { cls = "wrong"; tag = '<span class="r-tag bad">Your answer</span>'; }
+            if (oi === item.chosen && item.chosen === item.answer) { tag = '<span class="r-tag ok">Your answer ✓</span>'; }
+            html += '<div class="r-opt ' + cls + '"><span class="letter">' + letters[oi] + '</span><span>' + esc(opt) + '</span>' + tag + '</div>';
+          });
+          if (item.chosen === -1) html += '<div class="skip-note">You did not answer this question.</div>';
+          card.innerHTML = html;
+          list.appendChild(card);
+        });
+      }
+
+      $("btn-back-tests").addEventListener("click", function(){
+        renderTestList();
+        show("view-app");
+      });
+    </script>
+  </body>
+</html>
