@@ -1,0 +1,120 @@
+{
+  "title": "Biology — Cell Structure & Function",
+  "chapter": "Chapter 2 · Cell Biology",
+  "subject": "Biology",
+  "minutes": 10,
+  "from": "31 Oct 2026, 12:00 AM",
+  "to": "31 Dec 2026, 11:59 PM",
+  "questions": [
+    {
+      "q": "Which organelle is known as the powerhouse of the cell?",
+      "options": [
+        "Ribosome",
+        "Mitochondria",
+        "Golgi apparatus",
+        "Nucleus"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "q": "Protein synthesis in the cell takes place in the:",
+      "options": [
+        "Lysosome",
+        "Vacuole",
+        "Ribosome",
+        "Centriole"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "q": "Which organelle contains digestive enzymes and is called the suicidal bag of the cell?",
+      "options": [
+        "Lysosome",
+        "Mitochondria",
+        "Endoplasmic reticulum",
+        "Plastid"
+      ],
+      "answer": 0,
+      "points": 1
+    },
+    {
+      "q": "The plasma membrane is mainly composed of a bilayer of:",
+      "options": [
+        "Cellulose",
+        "Phospholipids",
+        "Chitin",
+        "Starch"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "q": "In prokaryotic cells, the genetic material is located in the:",
+      "options": [
+        "Nucleus",
+        "Nucleolus",
+        "Nucleoid",
+        "Chloroplast"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "q": "Which structure controls the entry and exit of substances in a cell?",
+      "options": [
+        "Cell wall",
+        "Cytoplasm",
+        "Cell membrane",
+        "Ribosome"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "q": "Chlorophyll pigment is present in the:",
+      "options": [
+        "Mitochondria",
+        "Chloroplast",
+        "Leucoplast",
+        "Amyloplast"
+      ],
+      "answer": 1,
+      "points": 1
+    },
+    {
+      "q": "Which organelle modifies, sorts and packages proteins for transport?",
+      "options": [
+        "Golgi apparatus",
+        "Lysosome",
+        "Peroxisome",
+        "Glyoxysome"
+      ],
+      "answer": 0,
+      "points": 1
+    },
+    {
+      "q": "The fluid mosaic model of the plasma membrane was proposed by:",
+      "options": [
+        "Schleiden and Schwann",
+        "Watson and Crick",
+        "Singer and Nicolson",
+        "Robert Brown"
+      ],
+      "answer": 2,
+      "points": 1
+    },
+    {
+      "q": "Which of the following is present in plant cells but absent in animal cells?",
+      "options": [
+        "Mitochondria",
+        "Cell wall",
+        "Ribosome",
+        "Golgi apparatus"
+      ],
+      "answer": 1,
+      "points": 1
+    }
+  ]
+}
