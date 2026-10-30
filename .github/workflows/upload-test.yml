@@ -1,10 +1,15 @@
 name: Upload test to portalTests
 
-# Future test-upload path for the Online Test Portal (manual only — never runs
+# Manual-only test-upload path for the Online Test Portal (never runs
 # automatically). A maintainer commits a test JSON file to this repo, then runs
-# this workflow by hand. It writes ONE document into the portalTests collection
-# using a Firebase service-account key stored as a GitHub Secret. The secret
-# value is never printed or committed; only its name is referenced here.
+# this workflow by hand. It signs in with a dedicated Firebase Auth uploader
+# account (email + password stored as GitHub Secrets; values are never printed
+# or committed) and writes ONE document into the portalTests collection.
+# The uploader account can ONLY write portalTests (scoped Firestore rule);
+# it cannot read student results or touch any other collection.
+# FIREBASE_API_KEY below is the public Firebase web API key — the same value
+# already shipped in the site's page source. It is an identifier, not a
+# secret; access control comes from Firestore rules.
 #
 # Test JSON format:
 # {
@@ -38,25 +43,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Firestore client
-        run: pip install google-cloud-firestore
-
-      - name: Write test document to Firestore
+      - name: Sign in and write test document
         env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          PORTAL_UPLOADER_EMAIL: ${{ secrets.PORTAL_UPLOADER_EMAIL }}
+          PORTAL_UPLOADER_PASSWORD: ${{ secrets.PORTAL_UPLOADER_PASSWORD }}
+          FIREBASE_API_KEY: AIzaSyDcl40Rd9qltVxIrU-XTitXSckmAKLnO0M
           FIREBASE_PROJECT_ID: graphic-mode-k5p7n
           FIREBASE_DATABASE_ID: ai-studio-examflow-90c5e0d3-b852-4230-9b5f-275b0a37264b
           TEST_JSON_PATH: ${{ inputs.test_json_path }}
           TEST_DOC_ID: ${{ inputs.test_doc_id }}
         run: |
           python3 - <<'PYEOF'
-          import json, os, sys
+          import json, os, sys, urllib.request, urllib.error
           from pathlib import Path
 
-          from google.oauth2 import service_account
-          from google.cloud import firestore
+          def fail(msg):
+              print("ERROR:", msg)
+              sys.exit(1)
 
-          key_json = os.environ["FIREBASE_SERVICE_ACCOUNT"]
+          email = os.environ["PORTAL_UPLOADER_EMAIL"]
+          password = os.environ["PORTAL_UPLOADER_PASSWORD"]
+          api_key = os.environ["FIREBASE_API_KEY"]
           project = os.environ["FIREBASE_PROJECT_ID"]
           database = os.environ["FIREBASE_DATABASE_ID"]
           path = Path(os.environ["TEST_JSON_PATH"])
@@ -73,9 +80,65 @@ jobs:
               assert isinstance(q.get("answer"), int), \
                   "each question needs an integer answer index"
 
-          info = json.loads(key_json)
-          creds = service_account.Credentials.from_service_account_info(info)
-          client = firestore.Client(credentials=creds, project=project, database=database)
-          client.collection("portalTests").document(doc_id).set(data)
-          print(f"wrote portalTests/{doc_id} ({len(data['questions'])} questions)")
+          # 1. Sign in with the uploader account (ID token is never printed).
+          auth_url = ("https://identitytoolkit.googleapis.com/v1/accounts:"
+                      "signInWithPassword?key=" + api_key)
+          req = urllib.request.Request(
+              auth_url,
+              data=json.dumps({"email": email, "password": password,
+                               "returnSecureToken": True}).encode(),
+              headers={"Content-Type": "application/json"})
+          try:
+              with urllib.request.urlopen(req) as resp:
+                  id_token = json.loads(resp.read())["idToken"]
+          except urllib.error.HTTPError as e:
+              body = e.read().decode(errors="replace")
+              try:
+                  code = json.loads(body)["error"]["message"]
+              except Exception:
+                  code = "sign-in failed"
+              fail("uploader sign-in failed: " + code)
+
+          # 2. Convert the test JSON to Firestore REST field format.
+          def convert(v):
+              if isinstance(v, str):
+                  return {"stringValue": v}
+              if isinstance(v, bool):
+                  return {"booleanValue": v}
+              if isinstance(v, int):
+                  return {"integerValue": str(v)}
+              if isinstance(v, float):
+                  return {"doubleValue": v}
+              if isinstance(v, list):
+                  return {"arrayValue": {"values": [convert(x) for x in v]}}
+              if isinstance(v, dict):
+                  return {"mapValue": {"fields": {k: convert(x) for k, x in v.items()}}}
+              if v is None:
+                  return {"nullValue": None}
+              fail("unsupported value type: " + type(v).__name__)
+
+          fields = {k: convert(v) for k, v in data.items()}
+          base = ("https://firestore.googleapis.com/v1/projects/" + project +
+                  "/databases/" + database + "/documents/portalTests/" + doc_id)
+          mask = "&".join("updateMask.fieldPaths=" + k for k in data)
+          headers = {"Authorization": "Bearer " + id_token,
+                     "Content-Type": "application/json"}
+
+          def call(method, url, body):
+              r = urllib.request.Request(url, data=json.dumps(body).encode(),
+                                         headers=headers, method=method)
+              try:
+                  with urllib.request.urlopen(r) as resp:
+                      return resp.status
+              except urllib.error.HTTPError as e:
+                  return e.code, e.read().decode(errors="replace")
+
+          status = call("PATCH", base + "?" + mask, {"fields": fields})
+          if isinstance(status, tuple) and status[0] == 404:
+              coll = base.rsplit("/portalTests/", 1)[0] + "/portalTests"
+              status = call("POST", coll + "?documentId=" + doc_id,
+                            {"fields": fields})
+          if isinstance(status, tuple):
+              fail("Firestore write failed (HTTP %s): %s" % (status[0], status[1][:300]))
+          print("wrote portalTests/%s (%d questions)" % (doc_id, len(data["questions"])))
           PYEOF
