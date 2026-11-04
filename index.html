@@ -656,7 +656,8 @@
             <input class="left" type="password" id="admin-password" placeholder="Admin password" autocomplete="current-password" />
           </div>
           <button type="submit" class="btn-primary">Admin Sign In</button>
-          <p class="admin-note">Sign-in ke baad Tests aur Results tabs khul jayenge.</p>
+          <button type="button" class="btn-ghost" id="btn-admin-google" style="width:100%;display:flex;justify-content:center;margin-top:12px">Google se Sign In</button>
+          <p class="admin-note">Google sign-in usi Gmail se karein jo admin ke liye hai (aslamsamejo45@gmail.com). Sign-in ke baad Tests aur Results tabs khul jayenge.</p>
         </form>
       </div>
     </section>
@@ -781,7 +782,7 @@
       "use strict";
       import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
       import { getFirestore, collection, getDocs, doc, getDoc, setDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
-      import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
+      import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
 
       /* ============ FIREBASE (JS SDK v11, named database) ============ */
       var FIREBASE_CONFIG = {"apiKey":"AIzaSyDcl40Rd9qltVxIrU-XTitXSckmAKLnO0M","authDomain":"graphic-mode-k5p7n.firebaseapp.com","projectId":"graphic-mode-k5p7n","storageBucket":"graphic-mode-k5p7n.firebasestorage.app","messagingSenderId":"657836619427","appId":"1:657836619427:web:c091f3679f4289b50b7116"};
@@ -1374,6 +1375,30 @@
           var msg = "Sign-in failed. Please check email and password.";
           if (ex && ex.code === "auth/too-many-requests") msg = "Too many attempts. Please wait a while and try again.";
           else if (ex && ex.code === "auth/network-request-failed") msg = "Network error. Please check connection and try again.";
+          err.textContent = msg;
+          err.classList.add("show");
+        }
+      });
+
+      $("btn-admin-google").addEventListener("click", async function(){
+        var err = $("admin-login-error");
+        err.classList.remove("show");
+        if (!fbAuth) {
+          err.textContent = "Admin sign-in is not available right now. Please try again later.";
+          err.classList.add("show");
+          return;
+        }
+        try {
+          var provider = new GoogleAuthProvider();
+          var cred = await signInWithPopup(fbAuth, provider);
+          adminUser = cred.user;
+          enterAdmin();
+        } catch (ex) {
+          var msg = "Google sign-in nahi hua. Dobara try karein.";
+          if (ex && ex.code === "auth/operation-not-allowed") msg = "Google sign-in is project mein on nahi hai. Firebase console mein Authentication → Sign-in method → Google on karna hoga.";
+          else if (ex && ex.code === "auth/unauthorized-domain") msg = "Is domain ki ijazat nahi hai. Firebase console mein Authentication → Settings → Authorized domains mein testportal.asmedico.online add karna hoga.";
+          else if (ex && ex.code === "auth/popup-closed-by-user") msg = "Popup band ho gaya. Dobara try karein.";
+          else if (ex && ex.code === "auth/popup-blocked") msg = "Browser ne popup block kar diya. Popup allow karke dobara try karein.";
           err.textContent = msg;
           err.classList.add("show");
         }
