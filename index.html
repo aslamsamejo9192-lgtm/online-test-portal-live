@@ -1504,6 +1504,14 @@
       $("btn-save-test").addEventListener("click", async function(){
         var st = $("test-form-status");
         clearAdminStatus(st);
+        /* Agar questions list khaali hai lekin JSON box mein kuch likha hai to pehle wo JSON load karo (Load dabana bhool jaye to bhi Save kaam kare) */
+        if (!pendingQuestions.length) {
+          var rawJson = $("tf-json").value.trim();
+          if (rawJson) {
+            try { loadTestJsonIntoForm(JSON.parse(rawJson)); }
+            catch (ex) { adminStatus(st, "JSON ghalat hai: " + ex.message, false); return; }
+          }
+        }
         var title = $("tf-title").value.trim();
         var err = null;
         if (!title) err = "Test Title zaroori hai.";
