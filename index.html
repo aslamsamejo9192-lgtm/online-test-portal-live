@@ -407,6 +407,74 @@
         .review-card{padding:18px}
         .modal .row{flex-direction:column-reverse}
       }
+
+      /* ---------- ADMIN PANEL (hidden route #admin, no link on student pages) ---------- */
+      .admin-wrap{max-width:1120px;margin:0 auto;padding:0 16px 56px}
+      .admin-topbar{
+        display:flex;align-items:center;justify-content:space-between;gap:12px;
+        padding:16px 2px 14px;flex-wrap:wrap;
+      }
+      .admin-topbar h2{font-size:24px;font-weight:800;margin:0}
+      .admin-topbar small{display:block;color:var(--ink-3);font-size:13.5px;font-weight:600}
+      .admin-tabs{display:flex;gap:6px;border-bottom:2px solid var(--line);margin:6px 0 20px;flex-wrap:wrap}
+      .tab-btn{
+        border:none;background:transparent;color:var(--ink-2);
+        padding:12px 18px;font-weight:800;font-size:15.5px;
+        border-bottom:3px solid transparent;margin-bottom:-2px;
+      }
+      .tab-btn.active{color:var(--accent-strong);border-bottom-color:var(--accent)}
+      .admin-card{
+        background:var(--surface);border:1px solid var(--line);border-radius:16px;
+        box-shadow:var(--shadow-sm);padding:22px;margin-bottom:18px;
+      }
+      .admin-card h3{font-size:19px;font-weight:800;margin:0 0 16px}
+      .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+      .field textarea{
+        width:100%;padding:14px;font-size:15px;
+        border:1.5px solid var(--line);border-radius:12px;
+        background:var(--surface);color:var(--ink);outline:none;resize:vertical;
+      }
+      .field textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+      .field input[type="file"]{width:100%;font-size:14.5px}
+      .field label.left{text-align:left}
+      .field input.left{text-align:left}
+      .btn-danger{
+        background:var(--red-soft);color:var(--red-bright);border:1.5px solid var(--red);
+        border-radius:10px;padding:9px 16px;font-weight:700;font-size:14px;min-height:42px;
+      }
+      .btn-sm{
+        border:1.5px solid var(--line);background:var(--surface);color:var(--ink);
+        border-radius:10px;padding:8px 14px;font-weight:700;font-size:13.5px;min-height:40px;
+      }
+      .btn-sm:hover{border-color:var(--accent);color:var(--accent)}
+      .admin-note{color:var(--ink-3);font-size:13.5px;font-weight:600;margin:10px 0 0}
+      .admin-status{
+        display:none;border-radius:10px;padding:11px 14px;font-size:14.5px;font-weight:600;margin-bottom:16px;
+      }
+      .admin-status.show{display:block}
+      .admin-status.ok{background:var(--green-soft);color:var(--green)}
+      .admin-status.err{background:var(--red-soft);color:var(--red-bright)}
+      .q-edit-item{
+        border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px;
+        display:flex;gap:12px;align-items:flex-start;
+      }
+      .q-edit-item b{flex:none}
+      .q-edit-item .qe-text{flex:1;min-width:0;font-size:14.5px}
+      .q-edit-item .qe-text small{display:block;color:var(--ink-3)}
+      .filter-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+      .filter-row select,.filter-row input{
+        padding:11px 14px;font-size:15px;border:1.5px solid var(--line);border-radius:11px;
+        background:var(--surface);color:var(--ink);outline:none;flex:1;min-width:200px;
+      }
+      .attempt-detail{
+        background:var(--surface-2);border:1px solid var(--line);border-radius:14px;
+        padding:18px;margin-top:16px;
+      }
+      .attempt-detail h4{margin:0 0 12px;font-size:17px}
+      @media (max-width:640px){
+        .grid2{grid-template-columns:1fr}
+        .admin-card{padding:18px 16px}
+      }
     </style>
   </head>
   <body>
@@ -572,18 +640,157 @@
       </div>
     </div>
 
+    <!-- ================= ADMIN LOGIN (hidden route #admin only) ================= -->
+    <section id="view-admin-login" class="hidden">
+      <div class="login-wrap">
+        <form class="login-card" id="admin-login-form" novalidate>
+          <h1 class="login-title">Admin Panel</h1>
+          <p class="login-sub">Sirf admin ke liye — students ko ye page nazar nahi aata</p>
+          <div class="login-error" id="admin-login-error" role="alert"></div>
+          <div class="field">
+            <label for="admin-email">Admin Email</label>
+            <input class="left" type="email" id="admin-email" placeholder="Admin email" autocomplete="username" />
+          </div>
+          <div class="field">
+            <label for="admin-password">Password</label>
+            <input class="left" type="password" id="admin-password" placeholder="Admin password" autocomplete="current-password" />
+          </div>
+          <button type="submit" class="btn-primary">Admin Sign In</button>
+          <p class="admin-note">Sign-in ke baad Tests aur Results tabs khul jayenge.</p>
+        </form>
+      </div>
+    </section>
+
+    <!-- ================= ADMIN DASHBOARD ================= -->
+    <section id="view-admin" class="hidden">
+      <div class="admin-wrap">
+        <div class="admin-topbar">
+          <div>
+            <h2>Admin Panel</h2>
+            <small id="admin-email-line">—</small>
+          </div>
+          <button class="btn-ghost" id="btn-admin-logout">Sign Out</button>
+        </div>
+
+        <div class="admin-tabs" role="tablist">
+          <button type="button" class="tab-btn active" id="tab-btn-tests">Tests</button>
+          <button type="button" class="tab-btn" id="tab-btn-results">Student Results</button>
+        </div>
+
+        <!-- TESTS TAB -->
+        <div id="admin-pane-tests">
+          <div class="admin-card">
+            <h3>Test Upload / Create</h3>
+            <div class="admin-status" id="test-form-status" role="alert"></div>
+            <div class="grid2">
+              <div class="field">
+                <label for="tf-id">Test ID (optional — khaali ho to khud ban jayega)</label>
+                <input class="left" type="text" id="tf-id" placeholder="e.g. biology-cell-structure" />
+              </div>
+              <div class="field">
+                <label for="tf-title">Test Title *</label>
+                <input class="left" type="text" id="tf-title" placeholder="Test ka naam" />
+              </div>
+              <div class="field">
+                <label for="tf-subject">Subject</label>
+                <input class="left" type="text" id="tf-subject" placeholder="e.g. Biology" />
+              </div>
+              <div class="field">
+                <label for="tf-chapter">Chapter</label>
+                <input class="left" type="text" id="tf-chapter" placeholder="e.g. Chapter 2 · Cell Biology" />
+              </div>
+              <div class="field">
+                <label for="tf-minutes">Time (minutes)</label>
+                <input class="left" type="number" id="tf-minutes" value="10" min="1" />
+              </div>
+              <div class="field">
+                <label for="tf-from">Start Time (optional)</label>
+                <input class="left" type="text" id="tf-from" placeholder="e.g. 31 Oct 2026, 12:00 AM" />
+              </div>
+              <div class="field">
+                <label for="tf-to">End Time (optional)</label>
+                <input class="left" type="text" id="tf-to" placeholder="e.g. 31 Dec 2026, 11:59 PM" />
+              </div>
+            </div>
+            <div class="field">
+              <label for="tf-json">Questions JSON (poora test JSON yahan paste karein, ya neeche file upload karein)</label>
+              <textarea id="tf-json" rows="6" placeholder='{"title": "...", "questions": [{"q": "...", "options": ["A","B","C","D"], "answer": 1}]}'></textarea>
+            </div>
+            <div class="field">
+              <label for="tf-file">JSON file upload</label>
+              <input type="file" id="tf-file" accept=".json,application/json" />
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <button type="button" class="btn-sm" id="btn-load-json">JSON Load Karo</button>
+              <button type="button" class="btn-sm" id="btn-clear-questions">Questions Clear Karo</button>
+            </div>
+            <div id="pending-questions" style="margin-top:16px"></div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
+              <button type="button" class="btn-primary" id="btn-save-test" style="width:auto;padding:14px 28px">Test Save Karo</button>
+            </div>
+            <p class="admin-note">Save karne par test foran student list mein aa jayega — koi redeploy nahi chahiye. JSON format: title + questions (har question: q, options, answer = 0-based index).</p>
+          </div>
+
+          <div class="admin-card">
+            <h3>Ek Question Add Karo</h3>
+            <div class="field">
+              <label for="aq-text">Question *</label>
+              <textarea id="aq-text" rows="2" placeholder="Question likhein"></textarea>
+            </div>
+            <div class="grid2">
+              <div class="field"><label for="aq-o0">Option A *</label><input class="left" type="text" id="aq-o0" /></div>
+              <div class="field"><label for="aq-o1">Option B *</label><input class="left" type="text" id="aq-o1" /></div>
+              <div class="field"><label for="aq-o2">Option C</label><input class="left" type="text" id="aq-o2" /></div>
+              <div class="field"><label for="aq-o3">Option D</label><input class="left" type="text" id="aq-o3" /></div>
+            </div>
+            <div class="field">
+              <label for="aq-ans">Correct Option *</label>
+              <select id="aq-ans" style="width:100%;padding:14px;border:1.5px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);font-size:15px">
+                <option value="0">A</option><option value="1">B</option><option value="2">C</option><option value="3">D</option>
+              </select>
+            </div>
+            <button type="button" class="btn-sm" id="btn-add-question">Question Add Karo</button>
+            <p class="admin-note">Ye question upar wali list mein add ho jayega, phir "Test Save Karo" dabayein.</p>
+          </div>
+
+          <div class="admin-card">
+            <h3>Tests List</h3>
+            <div id="admin-tests-area"></div>
+          </div>
+        </div>
+
+        <!-- RESULTS TAB -->
+        <div id="admin-pane-results" class="hidden">
+          <div class="admin-card">
+            <h3>Student Results</h3>
+            <div class="admin-status" id="results-status" role="alert"></div>
+            <div class="filter-row">
+              <select id="res-filter-test"><option value="">All Tests</option></select>
+              <input type="text" id="res-search" placeholder="Student name se search…" />
+              <button type="button" class="btn-sm" id="btn-refresh-results">Refresh</button>
+              <button type="button" class="btn-sm" id="btn-export-csv">CSV Download</button>
+            </div>
+            <div id="admin-results-area"></div>
+            <div id="attempt-detail-area"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <script type="module">
       "use strict";
       import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
-      import { getFirestore, collection, getDocs, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+      import { getFirestore, collection, getDocs, doc, getDoc, setDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+      import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
 
       /* ============ FIREBASE (JS SDK v11, named database) ============ */
       var FIREBASE_CONFIG = {"apiKey":"AIzaSyDcl40Rd9qltVxIrU-XTitXSckmAKLnO0M","authDomain":"graphic-mode-k5p7n.firebaseapp.com","projectId":"graphic-mode-k5p7n","storageBucket":"graphic-mode-k5p7n.firebasestorage.app","messagingSenderId":"657836619427","appId":"1:657836619427:web:c091f3679f4289b50b7116"};
       var FIRESTORE_DB_ID = "ai-studio-examflow-90c5e0d3-b852-4230-9b5f-275b0a37264b";
-      var fbApp = null, fbDb = null;
+      var fbApp = null, fbDb = null, fbAuth = null;
       try {
         fbApp = initializeApp(FIREBASE_CONFIG);
         fbDb = getFirestore(fbApp, FIRESTORE_DB_ID);
+        fbAuth = getAuth(fbApp);
       } catch (e) { console.error("Firebase init failed", e); }
 
       /* ============ TESTS (read at runtime from Firestore portalTests) ============ */
@@ -754,7 +961,7 @@
 
       function $(id){ return document.getElementById(id); }
       function show(viewId){
-        ["view-login","view-app","view-info","view-exam","view-result"].forEach(function(v){
+        ["view-login","view-app","view-info","view-exam","view-result","view-admin-login","view-admin"].forEach(function(v){
           $(v).classList.toggle("hidden", v !== viewId);
         });
         window.scrollTo(0,0);
@@ -1091,6 +1298,407 @@
         renderTestList();
         show("view-app");
       });
+
+      /* ============ ADMIN PANEL (hidden route #admin, no link on student pages) ============ */
+      var adminUser = null;
+      var pendingQuestions = [];
+      var adminResults = [];
+
+      function isAdminRoute(){ return window.location.hash === "#admin"; }
+      function showAdmin(viewId){
+        ["view-login","view-app","view-info","view-exam","view-result","view-admin-login","view-admin"].forEach(function(v){
+          $(v).classList.toggle("hidden", v !== viewId);
+        });
+        window.scrollTo(0,0);
+      }
+      function adminStatus(el, msg, ok){
+        if (!el) return;
+        el.textContent = msg;
+        el.className = "admin-status show " + (ok ? "ok" : "err");
+      }
+      function clearAdminStatus(el){
+        if (!el) return;
+        el.textContent = "";
+        el.className = "admin-status";
+      }
+      function enterAdmin(){
+        $("admin-email-line").textContent = adminUser ? adminUser.email : "—";
+        showAdmin("view-admin");
+        loadTestsFromFirebase().then(function(){
+          renderAdminTests();
+          buildResultFilter();
+          loadAdminResults();
+        });
+      }
+      function handleAdminRoute(){
+        if (!isAdminRoute()) return;
+        if (adminUser) enterAdmin();
+        else showAdmin("view-admin-login");
+      }
+      window.addEventListener("hashchange", function(){
+        if (isAdminRoute()) handleAdminRoute();
+        else show("view-login");
+      });
+      if (fbAuth) {
+        onAuthStateChanged(fbAuth, function(user){
+          adminUser = user || null;
+          if (isAdminRoute()) {
+            if (adminUser) enterAdmin();
+            else showAdmin("view-admin-login");
+          }
+        });
+      }
+      if (isAdminRoute()) showAdmin("view-admin-login");
+
+      $("admin-login-form").addEventListener("submit", async function(e){
+        e.preventDefault();
+        var email = $("admin-email").value.trim();
+        var pass = $("admin-password").value;
+        var err = $("admin-login-error");
+        err.classList.remove("show");
+        if (!email || !pass) {
+          err.textContent = "Please enter admin email and password.";
+          err.classList.add("show");
+          return;
+        }
+        if (!fbAuth) {
+          err.textContent = "Admin sign-in is not available right now. Please try again later.";
+          err.classList.add("show");
+          return;
+        }
+        try {
+          var cred = await signInWithEmailAndPassword(fbAuth, email, pass);
+          adminUser = cred.user;
+          enterAdmin();
+        } catch (ex) {
+          var msg = "Sign-in failed. Please check email and password.";
+          if (ex && ex.code === "auth/too-many-requests") msg = "Too many attempts. Please wait a while and try again.";
+          else if (ex && ex.code === "auth/network-request-failed") msg = "Network error. Please check connection and try again.";
+          err.textContent = msg;
+          err.classList.add("show");
+        }
+      });
+
+      $("btn-admin-logout").addEventListener("click", async function(){
+        try { if (fbAuth) await signOut(fbAuth); } catch (e) {}
+        adminUser = null;
+        showAdmin("view-admin-login");
+      });
+
+      function switchAdminTab(tab){
+        $("tab-btn-tests").classList.toggle("active", tab === "tests");
+        $("tab-btn-results").classList.toggle("active", tab === "results");
+        $("admin-pane-tests").classList.toggle("hidden", tab !== "tests");
+        $("admin-pane-results").classList.toggle("hidden", tab !== "results");
+      }
+      $("tab-btn-tests").addEventListener("click", function(){ switchAdminTab("tests"); });
+      $("tab-btn-results").addEventListener("click", function(){ switchAdminTab("results"); });
+
+      /* ---------- Admin: Tests ---------- */
+      function slugify(s){
+        return String(s || "").toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "test";
+      }
+      function renderPendingQuestions(){
+        var box = $("pending-questions");
+        if (!pendingQuestions.length) {
+          box.innerHTML = '<p class="admin-note">Abhi koi question add nahi hua. JSON load karein ya neeche se ek question add karein.</p>';
+          return;
+        }
+        var html = "<h4 style='margin:0 0 10px;font-size:15.5px'>Questions (" + pendingQuestions.length + ")</h4>";
+        pendingQuestions.forEach(function(q, i){
+          html += '<div class="q-edit-item"><b>' + (i+1) + '.</b><div class="qe-text">' + esc(q.q) +
+            "<small>" + q.options.map(function(o, oi){ return (oi === q.answer ? "✓ " : "") + esc(o); }).join(" · ") + "</small></div>" +
+            '<button type="button" class="btn-sm" data-rm="' + i + '">Remove</button></div>';
+        });
+        box.innerHTML = html;
+        box.querySelectorAll("[data-rm]").forEach(function(btn){
+          btn.addEventListener("click", function(){
+            pendingQuestions.splice(parseInt(btn.getAttribute("data-rm"), 10), 1);
+            renderPendingQuestions();
+          });
+        });
+      }
+      function validateQuestions(list){
+        if (!list.length) return "Kam az kam ek question chahiye.";
+        for (var i = 0; i < list.length; i++) {
+          var q = list[i];
+          if (!q.q || !String(q.q).trim()) return "Question " + (i+1) + " ka text khaali hai.";
+          if (!q.options || q.options.length < 2) return "Question " + (i+1) + " mein kam az kam 2 options chahiye.";
+          for (var j = 0; j < q.options.length; j++) {
+            if (!String(q.options[j]).trim()) return "Question " + (i+1) + " ka option " + (j+1) + " khaali hai.";
+          }
+          if (typeof q.answer !== "number" || q.answer < 0 || q.answer >= q.options.length)
+            return "Question " + (i+1) + " ka correct answer index ghalat hai.";
+        }
+        return null;
+      }
+      function normPendingQuestion(qq){
+        return {
+          q: qq.q || qq.text || "",
+          options: (qq.options || []).map(function(o){ return String(o); }),
+          answer: (typeof qq.answer === "number") ? qq.answer : qq.correctAnswer,
+          points: qq.points || 1
+        };
+      }
+      function loadTestJsonIntoForm(data){
+        if (!data || typeof data !== "object") throw new Error("JSON ek object hona chahiye.");
+        if (data.title) $("tf-title").value = data.title;
+        if (data.subject) $("tf-subject").value = data.subject;
+        if (data.chapter) $("tf-chapter").value = data.chapter;
+        if (data.minutes) $("tf-minutes").value = data.minutes;
+        if (data.from) $("tf-from").value = data.from;
+        if (data.to) $("tf-to").value = data.to;
+        var qs = (data.questions || []).map(normPendingQuestion);
+        var err = validateQuestions(qs);
+        if (err) throw new Error(err);
+        pendingQuestions = qs;
+        renderPendingQuestions();
+        return qs.length;
+      }
+      $("btn-load-json").addEventListener("click", function(){
+        var raw = $("tf-json").value.trim();
+        var st = $("test-form-status");
+        clearAdminStatus(st);
+        if (!raw) { adminStatus(st, "Pehle JSON paste karein ya file upload karein.", false); return; }
+        try {
+          var n = loadTestJsonIntoForm(JSON.parse(raw));
+          adminStatus(st, n + " questions load ho gaye.", true);
+        } catch (ex) {
+          adminStatus(st, "JSON ghalat hai: " + ex.message, false);
+        }
+      });
+      $("tf-file").addEventListener("change", function(){
+        var f = this.files && this.files[0];
+        if (!f) return;
+        var rd = new FileReader();
+        rd.onload = function(){
+          try {
+            var data = JSON.parse(rd.result);
+            var n = loadTestJsonIntoForm(data);
+            $("tf-json").value = rd.result;
+            adminStatus($("test-form-status"), n + " questions file se load ho gaye.", true);
+          } catch (ex) {
+            adminStatus($("test-form-status"), "File ka JSON ghalat hai: " + ex.message, false);
+          }
+        };
+        rd.readAsText(f);
+      });
+      $("btn-clear-questions").addEventListener("click", function(){
+        pendingQuestions = [];
+        $("tf-json").value = "";
+        renderPendingQuestions();
+      });
+      $("btn-add-question").addEventListener("click", function(){
+        var q = $("aq-text").value.trim();
+        var opts = [$("aq-o0").value.trim(), $("aq-o1").value.trim(), $("aq-o2").value.trim(), $("aq-o3").value.trim()].filter(function(o){ return o !== ""; });
+        var ans = parseInt($("aq-ans").value, 10);
+        if (!q || opts.length < 2 || ans >= opts.length) {
+          alert("Question, kam az kam 2 options aur correct option zaroori hai.");
+          return;
+        }
+        pendingQuestions.push({ q: q, options: opts, answer: ans, points: 1 });
+        ["aq-text","aq-o0","aq-o1","aq-o2","aq-o3"].forEach(function(id){ $(id).value = ""; });
+        $("aq-ans").value = "0";
+        renderPendingQuestions();
+      });
+      $("btn-save-test").addEventListener("click", async function(){
+        var st = $("test-form-status");
+        clearAdminStatus(st);
+        var title = $("tf-title").value.trim();
+        var err = null;
+        if (!title) err = "Test Title zaroori hai.";
+        else err = validateQuestions(pendingQuestions);
+        if (err) { adminStatus(st, err, false); return; }
+        if (!fbDb) { adminStatus(st, "Database available nahi hai.", false); return; }
+        var id = $("tf-id").value.trim() || (slugify(title) + "-" + Date.now().toString(36));
+        var data = {
+          title: title,
+          subject: $("tf-subject").value.trim(),
+          chapter: $("tf-chapter").value.trim(),
+          minutes: Math.max(1, parseInt($("tf-minutes").value, 10) || 10),
+          from: $("tf-from").value.trim(),
+          to: $("tf-to").value.trim(),
+          questions: pendingQuestions
+        };
+        try {
+          await setDoc(doc(fbDb, "portalTests", id), data);
+          adminStatus(st, "Test save ho gaya: " + title + " (" + pendingQuestions.length + " questions). Test ID: " + id, true);
+          await loadTestsFromFirebase();
+          renderAdminTests();
+          buildResultFilter();
+        } catch (ex) {
+          adminStatus(st, "Save nahi hua: " + (ex && ex.code ? ex.code : "error"), false);
+        }
+      });
+      function renderAdminTests(){
+        var area = $("admin-tests-area");
+        if (!TESTS.length) {
+          area.innerHTML = '<p class="admin-note">Abhi koi test nahi hai.</p>';
+          return;
+        }
+        var html = '<div class="table-wrap"><table class="test-table"><thead><tr><th>Test</th><th>Questions</th><th>Time</th><th>Action</th></tr></thead><tbody>';
+        TESTS.forEach(function(t){
+          html += "<tr>" +
+            '<td class="cell-test" data-label="Test"><div class="t-name">' + esc(t.title) + '</div><div class="t-sub">' + (t.subject ? esc(t.subject) + " · " : "") + esc(t.chapter) + "</div></td>" +
+            '<td data-label="Questions">' + t.questions.length + "</td>" +
+            '<td data-label="Time">' + t.minutes + " min</td>" +
+            '<td class="cell-action" data-label="Action"><button type="button" class="btn-danger" data-del="' + esc(t.id) + '">Delete</button></td>' +
+            "</tr>";
+        });
+        html += "</tbody></table></div>";
+        area.innerHTML = html;
+        area.querySelectorAll("[data-del]").forEach(function(btn){
+          btn.addEventListener("click", async function(){
+            var id = btn.getAttribute("data-del");
+            if (!confirm("Ye test delete karna hai? Students ko ye test nazar nahi aayega.")) return;
+            try {
+              await deleteDoc(doc(fbDb, "portalTests", id));
+              await loadTestsFromFirebase();
+              renderAdminTests();
+              buildResultFilter();
+            } catch (ex) {
+              alert("Delete nahi hua: " + (ex && ex.code ? ex.code : "error"));
+            }
+          });
+        });
+      }
+
+      /* ---------- Admin: Results ---------- */
+      function fmtAttemptDate(v){
+        try {
+          if (v && typeof v.toDate === "function") {
+            var d = v.toDate();
+            return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) + ", " + d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+          }
+          if (v && typeof v.seconds === "number") {
+            var d2 = new Date(v.seconds * 1000);
+            return d2.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) + ", " + d2.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+          }
+        } catch (e) {}
+        return "—";
+      }
+      function buildResultFilter(){
+        var sel = $("res-filter-test");
+        var cur = sel.value;
+        sel.innerHTML = '<option value="">All Tests</option>';
+        TESTS.forEach(function(t){
+          var o = document.createElement("option");
+          o.value = t.id; o.textContent = t.title;
+          sel.appendChild(o);
+        });
+        sel.value = cur;
+      }
+      function filteredResults(){
+        var tid = $("res-filter-test").value;
+        var q = $("res-search").value.trim().toLowerCase();
+        return adminResults.filter(function(r){
+          if (tid && r.testId !== tid) return false;
+          if (q && (r.studentName + " " + r.fatherName).toLowerCase().indexOf(q) === -1) return false;
+          return true;
+        });
+      }
+      async function loadAdminResults(){
+        var area = $("admin-results-area");
+        var st = $("results-status");
+        clearAdminStatus(st);
+        if (!fbDb) { area.innerHTML = '<p class="admin-note">Database available nahi hai.</p>'; return; }
+        area.innerHTML = '<p class="admin-note">Results load ho rahe hain…</p>';
+        try {
+          var snap = await getDocs(collection(fbDb, "portalAttempts"));
+          adminResults = [];
+          snap.forEach(function(ds){
+            var d = ds.data() || {};
+            adminResults.push({
+              id: ds.id,
+              studentName: d.studentName || "",
+              fatherName: d.fatherName || "",
+              testId: d.testId || "",
+              testTitle: d.testTitle || "",
+              answers: d.answers || [],
+              score: (typeof d.score === "number") ? d.score : 0,
+              total: (typeof d.total === "number") ? d.total : 0,
+              percentage: (typeof d.percentage === "number") ? d.percentage : 0,
+              submittedAt: d.submittedAt || null
+            });
+          });
+          adminResults.sort(function(a, b){
+            var ta = a.submittedAt && a.submittedAt.seconds ? a.submittedAt.seconds : 0;
+            var tb = b.submittedAt && b.submittedAt.seconds ? b.submittedAt.seconds : 0;
+            return tb - ta;
+          });
+          renderAdminResults();
+        } catch (ex) {
+          area.innerHTML = '<p class="admin-note">Results load nahi hue: ' + esc(ex && ex.code ? ex.code : "error") + '</p>';
+        }
+      }
+      function renderAdminResults(){
+        var area = $("admin-results-area");
+        var rows = filteredResults();
+        $("attempt-detail-area").innerHTML = "";
+        if (!rows.length) {
+          area.innerHTML = '<p class="admin-note">Koi result nahi mila.</p>';
+          return;
+        }
+        var html = '<div class="table-wrap"><table class="test-table"><thead><tr><th>Student</th><th>Test</th><th>Score</th><th>Date</th><th>Action</th></tr></thead><tbody>';
+        rows.forEach(function(r, i){
+          html += "<tr>" +
+            '<td class="cell-test" data-label="Student"><div class="t-name">' + esc(r.studentName) + '</div><div class="t-sub">Father: ' + esc(r.fatherName) + "</div></td>" +
+            '<td data-label="Test">' + esc(r.testTitle) + "</td>" +
+            '<td data-label="Score">' + r.score + " / " + r.total + " (" + r.percentage + "%)</td>" +
+            '<td data-label="Date"><span class="t-when">' + esc(fmtAttemptDate(r.submittedAt)) + "</span></td>" +
+            '<td class="cell-action" data-label="Action"><button type="button" class="btn-sm" data-view="' + i + '">Detail</button></td>' +
+            "</tr>";
+        });
+        html += "</tbody></table></div>";
+        area.innerHTML = html;
+        area.querySelectorAll("[data-view]").forEach(function(btn){
+          btn.addEventListener("click", function(){
+            showAttemptDetail(rows[parseInt(btn.getAttribute("data-view"), 10)]);
+          });
+        });
+      }
+      function showAttemptDetail(r){
+        var box = $("attempt-detail-area");
+        var t = TESTS.filter(function(x){ return x.id === r.testId; })[0];
+        var letters = ["A","B","C","D"];
+        var html = '<div class="attempt-detail"><h4>' + esc(r.studentName) + " — " + esc(r.testTitle) + " (" + r.score + "/" + r.total + ")</h4>";
+        if (t) {
+          t.questions.forEach(function(q, i){
+            var chosen = r.answers[i];
+            var ok = chosen === q.answer;
+            html += '<p style="margin:0 0 10px;font-size:14.5px"><b>Q' + (i+1) + '.</b> ' + esc(q.q) +
+              "<br/>Student: " + (chosen === undefined || chosen === -1 ? "— (jawab nahi diya)" : letters[chosen] + ". " + esc(q.options[chosen] || "")) +
+              "<br/>Correct: " + letters[q.answer] + ". " + esc(q.options[q.answer] || "") +
+              (ok ? ' <span style="color:var(--green);font-weight:800">✓</span>' : ' <span style="color:var(--red-bright);font-weight:800">✗</span>') + "</p>";
+          });
+        } else {
+          html += '<p class="admin-note">Is test ke questions ab maujood nahi hain (test delete ho chuka hai), is liye detail review nahi dikhaya ja sakta.</p>';
+          html += '<p style="font-size:14.5px">Chosen answers: ' + r.answers.map(function(a){ return a === -1 ? "—" : letters[a]; }).join(", ") + "</p>";
+        }
+        html += "</div>";
+        box.innerHTML = html;
+        box.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+      $("btn-refresh-results").addEventListener("click", function(){ loadAdminResults(); });
+      $("res-filter-test").addEventListener("change", function(){ renderAdminResults(); });
+      $("res-search").addEventListener("input", function(){ renderAdminResults(); });
+      $("btn-export-csv").addEventListener("click", function(){
+        var rows = filteredResults();
+        if (!rows.length) { alert("Export ke liye koi result nahi hai."); return; }
+        var csv = "Student,Father Name,Test,Score,Total,Percentage,Date\n";
+        rows.forEach(function(r){
+          function c(v){ return '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"'; }
+          csv += [c(r.studentName), c(r.fatherName), c(r.testTitle), r.score, r.total, r.percentage, c(fmtAttemptDate(r.submittedAt))].join(",") + "\n";
+        });
+        var blob = new Blob([csv], { type: "text/csv" });
+        var a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "portal-results.csv";
+        a.click();
+        URL.revokeObjectURL(a.href);
+      });
+
+      renderPendingQuestions();
     </script>
   </body>
 </html>
