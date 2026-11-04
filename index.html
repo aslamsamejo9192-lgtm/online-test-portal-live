@@ -728,7 +728,7 @@
             <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
               <button type="button" class="btn-primary" id="btn-save-test" style="width:auto;padding:14px 28px">Test Save Karo</button>
             </div>
-            <p class="admin-note">Save karne par test foran student list mein aa jayega — koi redeploy nahi chahiye. JSON format: title + questions (har question: q, options, answer = 0-based index).</p>
+            <p class="admin-note">Save karne par test foran student list mein aa jayega — koi redeploy nahi chahiye. JSON format: title + questions; seedhi list (array) bhi chalegi, question/q dono chalenge, answer number ya lafz dono chalenge.</p>
           </div>
 
           <div class="admin-card">
@@ -1428,27 +1428,49 @@
             if (!String(q.options[j]).trim()) return "Question " + (i+1) + " ka option " + (j+1) + " khaali hai.";
           }
           if (typeof q.answer !== "number" || q.answer < 0 || q.answer >= q.options.length)
-            return "Question " + (i+1) + " ka correct answer index ghalat hai.";
+            return q.answer === -1
+              ? "Question " + (i+1) + " ka answer options mein nahi mila."
+              : "Question " + (i+1) + " ka correct answer index ghalat hai.";
         }
         return null;
       }
+      function resolveAnswerIndex(raw, opts){
+        if (typeof raw === "number") return raw;
+        if (typeof raw === "string") {
+          var t = raw.trim();
+          if (!t) return -1;
+          var needle = t.toLowerCase();
+          for (var k = 0; k < opts.length; k++) {
+            if (opts[k].trim().toLowerCase() === needle) return k;
+          }
+          if (/^[A-Da-d]$/.test(t)) return t.toUpperCase().charCodeAt(0) - 65;
+          var asNum = parseInt(t, 10);
+          if (!isNaN(asNum) && asNum >= 1 && asNum <= opts.length) return asNum - 1;
+        }
+        return -1;
+      }
       function normPendingQuestion(qq){
+        var opts = (qq.options || []).map(function(o){ return String(o); });
+        var ans = resolveAnswerIndex(qq.answer, opts);
+        if (ans === -1) ans = resolveAnswerIndex(qq.correctAnswer, opts);
+        if (ans === -1) ans = resolveAnswerIndex(qq.correct_answer, opts);
         return {
-          q: qq.q || qq.text || "",
-          options: (qq.options || []).map(function(o){ return String(o); }),
-          answer: (typeof qq.answer === "number") ? qq.answer : qq.correctAnswer,
+          q: qq.q || qq.question || qq.text || "",
+          options: opts,
+          answer: ans,
           points: qq.points || 1
         };
       }
       function loadTestJsonIntoForm(data){
-        if (!data || typeof data !== "object") throw new Error("JSON ek object hona chahiye.");
+        if (Array.isArray(data)) data = { questions: data };
+        if (!data || typeof data !== "object") throw new Error("JSON ek object ya questions ki list hona chahiye.");
         if (data.title) $("tf-title").value = data.title;
         if (data.subject) $("tf-subject").value = data.subject;
         if (data.chapter) $("tf-chapter").value = data.chapter;
         if (data.minutes) $("tf-minutes").value = data.minutes;
         if (data.from) $("tf-from").value = data.from;
         if (data.to) $("tf-to").value = data.to;
-        var qs = (data.questions || []).map(normPendingQuestion);
+        var qs = (data.questions || data.mcqs || data.items || []).map(normPendingQuestion);
         var err = validateQuestions(qs);
         if (err) throw new Error(err);
         pendingQuestions = qs;
