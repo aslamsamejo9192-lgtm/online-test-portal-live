@@ -121,6 +121,7 @@
       }
       .btn-primary:hover{background:var(--accent-strong)}
       .btn-primary:active{transform:scale(.99)}
+      .btn-primary:disabled,.btn-start-lg:disabled,.btn-submit-final:disabled,.btn-confirm:disabled{opacity:.65;cursor:not-allowed}
       .login-title{font-size:29px;font-weight:800;margin:0 0 6px}
       .login-sub{color:var(--ink-2);font-size:15.5px;margin:0 0 24px}
       /* ---------- APP SHELL / TEST LIST ---------- */
@@ -497,7 +498,7 @@
             <input type="text" id="login-father" placeholder="Enter your father name" autocomplete="off" />
           </div>
         </div>
-        <button type="submit" class="btn-primary">Start</button>
+        <button type="submit" class="btn-primary" id="btn-login-start">Start</button>
       </form>
     </section>
 
@@ -989,6 +990,9 @@
           return;
         }
         err.classList.remove("show");
+        var loginBtn = $("btn-login-start");
+        loginBtn.textContent = "Starting…";
+        loginBtn.disabled = true;
         state.user = {
           name: name,
           fatherName: father,
@@ -1003,9 +1007,13 @@
         $("student-name").textContent = state.user.name;
         $("student-father-line").textContent = "Father Name: " + state.user.fatherName;
         $("student-avatar").textContent = state.user.name.charAt(0).toUpperCase();
-        show("view-app");
-        $("tests-area").innerHTML = '<div class="empty-state"><h3>Loading tests…</h3></div>';
-        loadTestsFromFirebase().then(function(){ renderTestList(); });
+        loadTestsFromFirebase().then(function(){
+          renderTestList();
+          show("view-app");
+          var loginBtn = $("btn-login-start");
+          loginBtn.textContent = "Start";
+          loginBtn.disabled = false;
+        });
       }
 
       $("btn-logout").addEventListener("click", function(){
@@ -1057,6 +1065,8 @@
           btn.addEventListener("click", async function(){
             var t = TESTS.filter(function(x){ return x.id === btn.getAttribute("data-test-id"); })[0];
             if (!t) return;
+            btn.textContent = "Starting…";
+            btn.disabled = true;
             if (await hasAttemptedRemote(t.id)) { renderTestList(); showCannotAttemptAgain(); return; }
             var notice = $("attempt-notice");
             if (notice) notice.classList.add("hidden");
@@ -1072,6 +1082,9 @@
       function openTestInfo(test){
         if (hasAttempted(test.id)) { showCannotAttemptAgain(); return; }
         state.pendingTest = test;
+        var infoStartBtn = $("btn-info-start");
+        infoStartBtn.textContent = "Start Exam";
+        infoStartBtn.disabled = false;
         $("info-title").textContent = test.title;
         $("info-from").textContent = test.from;
         $("info-to").textContent = test.to;
@@ -1087,15 +1100,22 @@
       $("btn-info-start").addEventListener("click", async function(){
         if (!state.pendingTest) return;
         var t = state.pendingTest;
+        var infoStartBtn = $("btn-info-start");
+        infoStartBtn.textContent = "Starting…";
+        infoStartBtn.disabled = true;
         if (await hasAttemptedRemote(t.id)) {
           state.pendingTest = null;
+          infoStartBtn.textContent = "Start Exam";
+          infoStartBtn.disabled = false;
           renderTestList();
           show("view-app");
           showCannotAttemptAgain();
           return;
         }
         state.pendingTest = null;
-        startExam(t);
+        await startExam(t);
+        infoStartBtn.textContent = "Start Exam";
+        infoStartBtn.disabled = false;
       });
       $("locked-modal-ok").addEventListener("click", function(){
         $("locked-modal").classList.add("hidden");
@@ -1203,9 +1223,22 @@
       $("modal-cancel").addEventListener("click", function(){
         $("submit-modal").classList.add("hidden");
       });
-      $("modal-confirm").addEventListener("click", function(){
-        $("submit-modal").classList.add("hidden");
-        submitExam(false);
+      $("modal-confirm").addEventListener("click", async function(){
+        var confirmBtn = $("modal-confirm");
+        var submitBtn = $("btn-submit");
+        confirmBtn.textContent = "Submitting…";
+        confirmBtn.disabled = true;
+        submitBtn.textContent = "Submitting…";
+        submitBtn.disabled = true;
+        try {
+          await submitExam(false);
+        } finally {
+          $("submit-modal").classList.add("hidden");
+          confirmBtn.textContent = "Submit";
+          confirmBtn.disabled = false;
+          submitBtn.textContent = "Submit";
+          submitBtn.disabled = false;
+        }
       });
 
       async function submitExam(auto){
